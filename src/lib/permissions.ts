@@ -55,7 +55,8 @@ export interface QuotaState {
   isLoading: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Supabase client type — intentionally loose to avoid SSR 0.5.2 GenericSchema issues
+// eslint-disable-next-line
 type SupabaseClient = any;
 
 // ============================================
