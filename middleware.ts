@@ -4,16 +4,11 @@ import { createServerClient } from "@supabase/ssr";
 const PUBLIC_PATHS = ["/", "/login", "/signup", "/age-gate"];
 const STATIC_PREFIXES = ["/_next", "/api", "/favicon.ico", "/public"];
 
-function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_PATHS.includes(pathname)) return true;
-  return STATIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public paths and static assets to pass through
-  if (isPublicPath(pathname)) {
+  // Quick pass for static assets
+  if (STATIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next();
   }
 
@@ -36,23 +31,28 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Refresh session if expired - this writes to supabaseResponse cookies
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // Not authenticated: redirect to login
+  // Not authenticated: only allow public pages
   if (!user) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+    if (!PUBLIC_PATHS.includes(pathname)) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next();
   }
 
-  // Check if user has completed onboarding (age gate)
   const hasCompletedAgeGate = user.user_metadata?.age_verified === true;
 
+  // Authenticated but not age-gated → must complete age gate first
   if (!hasCompletedAgeGate && pathname !== "/age-gate") {
     return NextResponse.redirect(new URL("/age-gate", request.url));
+  }
+
+  // Authenticated + onboarded: visiting root or auth pages → straight to chat
+  if (hasCompletedAgeGate && ["/", "/login", "/signup", "/age-gate"].includes(pathname)) {
+    return NextResponse.redirect(new URL("/chat", request.url));
   }
 
   return supabaseResponse;
@@ -60,14 +60,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files
-     * - api routes (handled separately)
-     */
     "/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
