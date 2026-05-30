@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Centralized quota check
-  const quota = await checkAvatarQuota(user.id);
+  const quota = await checkAvatarQuota(user.id, supabase);
   if (!quota.allowed) {
     return NextResponse.json(
       { error: { code: "LIMIT_REACHED", message: quota.reason } },
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       height: 1024,
     });
 
-    await incrementAvatarUsage(user.id);
+    await incrementAvatarUsage(user.id, supabase);
 
     return NextResponse.json({
       data: { imageUrl: result.imageUrl, seed: result.seed, prompt },

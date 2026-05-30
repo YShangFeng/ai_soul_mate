@@ -6,12 +6,12 @@
 //
 // 将来接入支付系统时，只需：
 //   1. PAYMENT_ENABLED 改为 true
-//   2. 确认 SUBSCRIPTION_TABLE 查询路径正确
-//   3. 所有 API route 和前端 hook 无需修改
+//   2. 所有 API route 和前端 hook 无需修改
+//
+// ⚠️ 此文件不 import server.ts，确保客户端代码也可安全引用
+//    所有函数接收 supabase client 作为参数，由调用方提供
 //
 // ============================================
-
-import { createClient } from "@/lib/supabase/server";
 
 // ============================================
 // 🔧 主开关：支付系统是否启用
@@ -21,7 +21,7 @@ import { createClient } from "@/lib/supabase/server";
 const PAYMENT_ENABLED = false;
 
 // ============================================
-// 限额配置（未来接入支付系统后启用）
+// 限额配置
 // ============================================
 export const LIMITS = {
   FREE: {
@@ -55,25 +55,14 @@ export interface QuotaState {
   isLoading: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseClient = any;
+
 // ============================================
-// 内部：判断用户等级
+// 内部：判断用户等级（接收 supabase client）
 // ============================================
-async function getUserTier(userId: string): Promise<"pro" | "free"> {
-  if (!PAYMENT_ENABLED) return "pro";
-
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("subscriptions")
-    .select("plan")
-    .eq("user_id", userId)
-    .single();
-
-  return data?.plan === "pro" ? "pro" : "free";
-}
-
-// 前端版本（接收 supabase client）
-export async function getUserTierClient(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+async function getUserTier(
+  supabase: SupabaseClient,
   userId: string,
 ): Promise<"pro" | "free"> {
   if (!PAYMENT_ENABLED) return "pro";
@@ -84,17 +73,17 @@ export async function getUserTierClient(
     .eq("user_id", userId)
     .single();
 
-  return data?.plan === "pro" ? "pro" : "free";
+  return (data as { plan?: string } | null)?.plan === "pro" ? "pro" : "free";
 }
 
 // ============================================
-// 1. 聊天配额检查（API route 用）
+// 1. 聊天配额检查
 // ============================================
 export async function checkChatQuota(
   userId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
 ): Promise<FeatureCheck> {
-  const tier = await getUserTier(userId);
+  const tier = await getUserTier(supabase, userId);
   const limit = LIMITS[tier === "pro" ? "PRO" : "FREE"].chatMessagesPerDay;
 
   if (limit === Number.POSITIVE_INFINITY) {
@@ -102,15 +91,14 @@ export async function checkChatQuota(
   }
 
   const today = new Date().toISOString().split("T")[0];
-  // Count today's user messages across all companions
-  const { count } = await supabase
-    .from("messages")
-    .select("*", { count: "exact", head: true })
+  const q = supabase.from("messages").select("*", { count: "exact", head: true })
     .eq("role", "user")
+    // @ts-ignore — chained filters
     .gte("created_at", `${today}T00:00:00Z`)
+    // @ts-ignore
     .lte("created_at", `${today}T23:59:59Z`);
-
-  const used = count ?? 0;
+  const result = await q as { count: number };
+  const used = result.count ?? 0;
   const remaining = Math.max(0, limit - used);
 
   return {
@@ -127,17 +115,16 @@ export async function checkChatQuota(
 // ============================================
 export async function checkCompanionLimit(
   userId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
 ): Promise<FeatureCheck> {
-  const tier = await getUserTier(userId);
+  const tier = await getUserTier(supabase, userId);
   const maxCompanions = LIMITS[tier === "pro" ? "PRO" : "FREE"].maxCompanions;
 
-  const { count } = await supabase
+  const result = await supabase
     .from("companions")
     .select("*", { count: "exact", head: true })
-    .eq("user_id", userId);
-
-  const used = count ?? 0;
+    .eq("user_id", userId) as { count: number };
+  const used = result.count ?? 0;
   const remaining = Math.max(0, maxCompanions - used);
 
   return {
@@ -154,22 +141,22 @@ export async function checkCompanionLimit(
 // ============================================
 export async function checkAvatarQuota(
   userId: string,
+  supabase: SupabaseClient,
 ): Promise<FeatureCheck> {
-  const tier = await getUserTier(userId);
+  const tier = await getUserTier(supabase, userId);
   const limit = LIMITS[tier === "pro" ? "PRO" : "FREE"].avatarGenerationsPerDay;
 
   if (limit === Number.POSITIVE_INFINITY) {
     return { allowed: true, limit: Number.POSITIVE_INFINITY, used: 0, remaining: Number.POSITIVE_INFINITY };
   }
 
-  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("daily_generations_used")
     .eq("id", userId)
     .single();
 
-  const used = profile?.daily_generations_used ?? 0;
+  const used = (profile as { daily_generations_used?: number } | null)?.daily_generations_used ?? 0;
   const remaining = Math.max(0, limit - used);
 
   return {
@@ -185,38 +172,39 @@ export async function checkAvatarQuota(
 // 4. 前端配额状态（useQuota hook 用）
 // ============================================
 export async function getQuotaState(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   userId: string,
 ): Promise<QuotaState> {
-  const tier = await getUserTierClient(supabase, userId);
-  const proLimits = LIMITS.PRO;
-  const freeLimits = LIMITS.FREE;
+  const tier = await getUserTier(supabase, userId);
   const isPro = tier === "pro";
-  const limit = isPro ? proLimits.chatMessagesPerDay : freeLimits.chatMessagesPerDay;
 
   if (isPro) {
     return { used: 0, limit: Number.POSITIVE_INFINITY, remaining: Number.POSITIVE_INFINITY, isPro: true, isLoading: false };
   }
 
+  const limit = LIMITS.FREE.chatMessagesPerDay;
   const today = new Date().toISOString().split("T")[0];
-  const { count } = await supabase
-    .from("messages")
-    .select("*", { count: "exact", head: true })
+  const q = supabase.from("messages").select("*", { count: "exact", head: true })
     .eq("role", "user")
+    // @ts-ignore
     .gte("created_at", `${today}T00:00:00Z`)
+    // @ts-ignore
     .lte("created_at", `${today}T23:59:59Z`);
+  const result = await q as { count: number };
+  const used = result.count ?? 0;
 
-  const used = count ?? 0;
   return { used, limit, remaining: Math.max(0, limit - used), isPro: false, isLoading: false };
 }
 
 // ============================================
 // 5. 增量计数（头像生成后用）
 // ============================================
-export async function incrementAvatarUsage(userId: string): Promise<void> {
-  if (!PAYMENT_ENABLED) return; // no tracking needed when payment is off
+export async function incrementAvatarUsage(
+  userId: string,
+  supabase: SupabaseClient,
+): Promise<void> {
+  if (!PAYMENT_ENABLED) return;
 
-  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("daily_generations_used")
@@ -225,6 +213,6 @@ export async function incrementAvatarUsage(userId: string): Promise<void> {
 
   await supabase
     .from("profiles")
-    .update({ daily_generations_used: (profile?.daily_generations_used ?? 0) + 1 })
+    .update({ daily_generations_used: ((profile as { daily_generations_used?: number } | null)?.daily_generations_used ?? 0) + 1 })
     .eq("id", userId);
 }
