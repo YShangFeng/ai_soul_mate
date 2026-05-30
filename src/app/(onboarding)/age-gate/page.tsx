@@ -39,6 +39,11 @@ export default function AgeGatePage() {
         return;
       }
 
+      // Update session metadata so middleware allows progression
+      await supabase.auth.updateUser({
+        data: { age_verified: true },
+      });
+
       // Store age group for the rest of the flow
       sessionStorage.setItem("ageGroup", result.ageGroup);
 
