@@ -73,7 +73,6 @@ export function SignupForm() {
         description: "Welcome to SoulMate.ai. Let's set up your profile.",
       });
       window.location.href = "/age-gate";
-      router.refresh();
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
     } finally {
