@@ -43,7 +43,8 @@ export interface ChatCompletionParams {
 // Avatar Generation (Stable Diffusion via SiliconFlow)
 // ============================================
 
-const SD_MODEL = "stabilityai/stable-diffusion-3-5-large";
+// Kwai-Kolors via SiliconFlow
+const SD_MODEL = "Kwai-Kolors/Kolors";
 
 /**
  * Generate an avatar image using SiliconFlow's image generation endpoint.

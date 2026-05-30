@@ -106,7 +106,7 @@ export const AI_CONFIG = {
   /** Fallback chat model */
   CHAT_MODEL_FALLBACK: "deepseek-ai/DeepSeek-R1",
   /** Image generation model */
-  IMAGE_MODEL: "stabilityai/stable-diffusion-3-5-large",
+  IMAGE_MODEL: "Kwai-Kolors/Kolors",
   /** Maximum conversation context tokens */
   MAX_CONTEXT_TOKENS: 4096,
   /** System prompt temperature */
