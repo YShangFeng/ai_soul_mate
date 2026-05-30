@@ -15,18 +15,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, companion, router]);
 
-  // Hide root layout Header/Footer when inside app pages
-  useEffect(() => {
-    const header = document.querySelector("header[data-root]");
-    const footer = document.querySelector("footer[data-root]");
-    if (header) (header as HTMLElement).style.display = "none";
-    if (footer) (footer as HTMLElement).style.display = "none";
-    return () => {
-      if (header) (header as HTMLElement).style.display = "";
-      if (footer) (footer as HTMLElement).style.display = "";
-    };
-  }, []);
-
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">

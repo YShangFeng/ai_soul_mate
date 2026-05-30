@@ -7,7 +7,7 @@ import { SubscriptionPanel } from "@/components/settings/subscription-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Mail, LogOut } from "lucide-react";
+import { Loader2, Mail, LogOut, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
@@ -32,6 +32,11 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6 px-4 pb-24 pt-20">
+      {/* Back button */}
+      <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0">
+        <ArrowLeft className="h-5 w-5" />
+      </Button>
+
       {/* User Info */}
       <Card className="border-border/40 overflow-hidden">
         <CardHeader>

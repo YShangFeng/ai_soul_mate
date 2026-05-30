@@ -150,6 +150,7 @@ function ChatInterface({
         name={companionName}
         avatarUrl={companionAvatarUrl}
         relationship={companionRelationship as Relationship}
+        companionId={companionId}
       />
 
       <div className="flex items-center justify-center border-b border-border/30 px-4 py-1.5">

@@ -15,6 +15,7 @@ interface ChatHeaderProps {
   name: string;
   avatarUrl: string | null;
   relationship: Relationship;
+  companionId?: string;
 }
 
 // ============================================
@@ -28,7 +29,7 @@ const RELATIONSHIP_EMOJI: Record<Relationship, string> = {
   fictional_character: "✨",
 };
 
-export function ChatHeader({ name, avatarUrl, relationship }: ChatHeaderProps) {
+export function ChatHeader({ name, avatarUrl, relationship, companionId }: ChatHeaderProps) {
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -64,7 +65,7 @@ export function ChatHeader({ name, avatarUrl, relationship }: ChatHeaderProps) {
           </Link>
         </Button>
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/profile" aria-label="Profile">
+          <Link href={`/profile?id=${companionId ?? ""}`} aria-label="Profile">
             <User className="h-5 w-5 text-muted-foreground" />
           </Link>
         </Button>

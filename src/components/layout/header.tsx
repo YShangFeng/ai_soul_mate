@@ -1,27 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Heart, User, MessageCircle, Settings, LogOut, Menu } from "lucide-react";
+import { Heart, Settings, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
-import { useCompanion } from "@/hooks/use-companion";
 
-// ============================================
-// Header
-// ============================================
+// Pages where this root header should NOT appear (chat/profile/settings have their own)
+const APP_ROUTES = ["/chat", "/profile", "/settings", "/age-gate", "/upload", "/reveal"];
 
 export function Header() {
+  const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading: isAuthLoading, signOut } = useAuth();
-  const { companion } = useCompanion();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
+  // Don't render on app pages — ChatHeader handles navigation there
+  if (APP_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
+    return null;
+  }
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -43,7 +45,7 @@ export function Header() {
   const initials = user?.email?.split("@")[0]?.slice(0, 2).toUpperCase() ?? "?";
 
   return (
-    <header data-root className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
+    <header className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 text-lg font-bold">
@@ -63,14 +65,8 @@ export function Header() {
               >
                 Chat
               </Link>
-              <Link
-                href="/profile"
-                className="text-sm text-muted-foreground transition hover:text-foreground"
-              >
-                Profile
-              </Link>
 
-              {/* User dropdown */}
+              {/* User dropdown — Settings + Logout only */}
               <div ref={dropdownRef} className="relative">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -78,10 +74,6 @@ export function Header() {
                   aria-label="User menu"
                 >
                   <Avatar className="h-8 w-8 border border-border/50">
-                    <AvatarImage
-                      src={companion?.avatarUrl ?? undefined}
-                      alt={user.email ?? "User"}
-                    />
                     <AvatarFallback className="bg-brand-purple/10 text-xs text-brand-purple">
                       {initials}
                     </AvatarFallback>
@@ -90,22 +82,6 @@ export function Header() {
 
                 {isDropdownOpen && (
                   <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border/40 bg-card/95 p-1 shadow-lg backdrop-blur-md">
-                    <DropdownItem
-                      icon={User}
-                      label="Profile"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        router.push("/profile");
-                      }}
-                    />
-                    <DropdownItem
-                      icon={MessageCircle}
-                      label="Chat"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        router.push("/chat");
-                      }}
-                    />
                     <DropdownItem
                       icon={Settings}
                       label="Settings"
@@ -157,7 +133,6 @@ export function Header() {
             {isLoggedIn ? (
               <>
                 <MobileLink href="/chat" label="Chat" onClick={() => setIsMenuOpen(false)} />
-                <MobileLink href="/profile" label="Profile" onClick={() => setIsMenuOpen(false)} />
                 <MobileLink href="/settings" label="Settings" onClick={() => setIsMenuOpen(false)} />
                 <hr className="my-2 border-border/40" />
                 <MobileLink href="#" label="Sign Out" onClick={() => { setIsMenuOpen(false); handleSignOut(); }} />
@@ -185,7 +160,7 @@ function DropdownItem({
   onClick,
   destructive = false,
 }: {
-  icon: typeof User;
+  icon: typeof Settings;
   label: string;
   onClick: () => void;
   destructive?: boolean;
