@@ -49,14 +49,14 @@ export function MessageList({
 
     // Scroll if new messages were added at the top (user sent) or streaming
     if (messages.length > prevLength || isStreaming) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      requestAnimationFrame(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); });
     }
   }, [messages.length, isStreaming]);
 
   // Scroll to bottom on streaming content update
   useEffect(() => {
     if (isStreaming && streamingContent) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      requestAnimationFrame(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); });
     }
   }, [isStreaming, streamingContent]);
 
