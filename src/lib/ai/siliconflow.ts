@@ -1,5 +1,8 @@
 // SiliconFlow API Client (direct fetch for max compatibility)
 
+const API_KEY = process.env.SILICONFLOW_API_KEY!;
+const BASE_URL = process.env.SILICONFLOW_BASE_URL || "https://api.siliconflow.cn/v1";
+
 // ============================================
 // Types
 // ============================================
