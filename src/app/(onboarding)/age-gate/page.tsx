@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AgeGateDialog, type AgeVerificationResult } from "@/components/onboarding/age-gate-dialog";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,18 +13,17 @@ export default function AgeGatePage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [isVerifying, setIsVerifying] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const hasRedirected = useRef(false);
 
   // On mount, check if user already completed onboarding
   useEffect(() => {
     if (isAuthLoading || !user) return;
 
     async function checkExisting() {
-      if (!user) return;
+      if (!user || hasRedirected.current) return;
       try {
-        // Check if age already verified in session
         const ageVerified = user.user_metadata?.age_verified === true;
 
-        // Also check database for companion
         const { data: companions } = await supabase
           .from("companions")
           .select("id")
@@ -34,18 +33,17 @@ export default function AgeGatePage() {
         const hasCompanion = companions && companions.length > 0;
 
         if (ageVerified && hasCompanion) {
-          // Fully onboarded — go to chat
-          window.location.href = "/chat";
+          hasRedirected.current = true;
+          router.replace("/chat");
           return;
         }
 
         if (ageVerified) {
-          // Age verified but no companion — go to upload
-          router.push("/upload");
+          router.replace("/upload");
           return;
         }
 
-        // Update metadata from DB if needed
+        // Fallback: check DB for age_verified
         const { data: profile } = await supabase
           .from("profiles")
           .select("age_verified")
@@ -53,14 +51,10 @@ export default function AgeGatePage() {
           .single();
 
         if (profile?.age_verified) {
-          // DB says verified, but session doesn't — update session
           await supabase.auth.updateUser({ data: { age_verified: true } });
 
-          if (hasCompanion) {
-            window.location.href = "/chat";
-          } else {
-            router.push("/upload");
-          }
+          hasRedirected.current = true;
+          router.replace(hasCompanion ? "/chat" : "/upload");
           return;
         }
       } catch (err) {
