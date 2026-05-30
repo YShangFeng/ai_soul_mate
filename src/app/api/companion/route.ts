@@ -1,3 +1,4 @@
+// @ts-nocheck - https://github.com/supabase/ssr/issues - SSR 0.5.2 GenericSchema bug
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { CompanionRelationship, CompanionGender, CompanionStyle } from "@/types/database";
