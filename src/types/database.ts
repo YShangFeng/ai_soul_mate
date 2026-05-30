@@ -66,6 +66,7 @@ export interface MessageRow {
 }
 
 export type MessageInsert = Omit<MessageRow, "id" | "created_at">;
+export type MessageUpdate = Partial<MessageInsert>;
 
 // --- Subscriptions ---
 export type SubscriptionStatus = "free" | "trialing" | "active" | "past_due" | "canceled";
@@ -98,6 +99,7 @@ export interface DailyGreetingRow {
 }
 
 export type DailyGreetingInsert = Omit<DailyGreetingRow, "id" | "created_at">;
+export type DailyGreetingUpdate = Partial<DailyGreetingInsert>;
 
 // --- Database Schema ---
 export interface Database {
@@ -107,71 +109,27 @@ export interface Database {
         Row: ProfileRow;
         Insert: ProfileInsert;
         Update: ProfileUpdate;
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey";
-            columns: ["id"];
-            referencedRelation: "users";
-            referencedColumns: ["id"];
-          },
-        ];
       };
       companions: {
         Row: CompanionRow;
         Insert: CompanionInsert;
         Update: CompanionUpdate;
-        Relationships: [
-          {
-            foreignKeyName: "companions_user_id_fkey";
-            columns: ["user_id"];
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-        ];
       };
       messages: {
         Row: MessageRow;
         Insert: MessageInsert;
-        Update: Partial<MessageInsert>;
-        Relationships: [
-          {
-            foreignKeyName: "messages_companion_id_fkey";
-            columns: ["companion_id"];
-            referencedRelation: "companions";
-            referencedColumns: ["id"];
-          },
-        ];
+        Update: MessageUpdate;
       };
       subscriptions: {
         Row: SubscriptionRow;
         Insert: SubscriptionInsert;
         Update: SubscriptionUpdate;
-        Relationships: [
-          {
-            foreignKeyName: "subscriptions_user_id_fkey";
-            columns: ["user_id"];
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-        ];
       };
       daily_greetings: {
         Row: DailyGreetingRow;
         Insert: DailyGreetingInsert;
-        Update: Partial<DailyGreetingInsert>;
-        Relationships: [
-          {
-            foreignKeyName: "daily_greetings_companion_id_fkey";
-            columns: ["companion_id"];
-            referencedRelation: "companions";
-            referencedColumns: ["id"];
-          },
-        ];
+        Update: DailyGreetingUpdate;
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
   };
 }
