@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useCompanion } from "@/hooks/use-companion";
+import { useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCompanions } from "@/hooks/use-companions";
 import { useChat } from "@/hooks/use-chat";
 import { useQuota } from "@/hooks/use-quota";
 import { ChatHeader } from "@/components/chat/chat-header";
@@ -10,26 +10,56 @@ import { MessageList } from "@/components/chat/message-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { WelcomeMessage } from "@/components/chat/welcome-message";
 import { QuotaIndicator } from "@/components/chat/quota-indicator";
+import { CompanionSwitcher } from "@/components/chat/companion-switcher";
+import type { Relationship } from "@/types/companion";
 import { Loader2 } from "lucide-react";
 
 /**
- * Chat Page — the core conversation interface.
- * iMessage-style chat with AI companion.
+ * Chat Page — multi-companion chat with iMessage-style UI.
+ * Companion selection via ?id=XXX URL param.
  */
 export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-brand-purple" />
+        </div>
+      }
+    >
+      <ChatPageInner />
+    </Suspense>
+  );
+}
+
+function ChatPageInner() {
   const router = useRouter();
-  const { companion, isLoading: isCompanionLoading } = useCompanion();
+  const searchParams = useSearchParams();
+  const { companions, isLoading: isCompanionsLoading } = useCompanions();
   const { used, limit, remaining, isPro, isLoading: isQuotaLoading } = useQuota();
 
-  // Redirect if no companion
+  // Get active companion from URL param, fallback to first companion
+  const activeId = searchParams.get("id") ?? companions[0]?.id ?? "";
+
+  // Find the active companion object
+  const companion = companions.find((c) => c.id === activeId) ?? null;
+
+  // If companions loaded and active companion not found, redirect to first
   useEffect(() => {
-    if (!isCompanionLoading && !companion) {
-      router.replace("/age-gate");
+    if (!isCompanionsLoading && companions.length > 0 && !companion) {
+      router.replace(`/chat?id=${companions[0].id}`);
     }
-  }, [isCompanionLoading, companion, router]);
+  }, [isCompanionsLoading, companions, companion, router]);
+
+  // If no companions at all, redirect to upload
+  useEffect(() => {
+    if (!isCompanionsLoading && companions.length === 0) {
+      router.replace("/upload");
+    }
+  }, [isCompanionsLoading, companions, router]);
 
   // Loading state
-  if (isCompanionLoading || !companion) {
+  if (isCompanionsLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-brand-purple" />
@@ -37,9 +67,24 @@ export default function ChatPage() {
     );
   }
 
-  // Inner component that depends on companion
+  // No companion yet
+  if (companions.length === 0) {
+    return null; // Will redirect via useEffect
+  }
+
+  // If no active companion set yet, show loading
+  if (!companion) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-purple" />
+      </div>
+    );
+  }
+
   return (
     <ChatInterface
+      companions={companions}
+      activeId={activeId}
       companionId={companion.id}
       companionName={companion.name}
       companionAvatarUrl={companion.avatarUrl}
@@ -54,6 +99,8 @@ export default function ChatPage() {
 // ============================================
 
 interface ChatInterfaceProps {
+  companions: ReturnType<typeof useCompanions>["companions"];
+  activeId: string;
   companionId: string;
   companionName: string;
   companionAvatarUrl: string | null;
@@ -68,6 +115,8 @@ interface ChatInterfaceProps {
 }
 
 function ChatInterface({
+  companions,
+  activeId,
   companionId,
   companionName,
   companionAvatarUrl,
@@ -92,11 +141,16 @@ function ChatInterface({
 
   return (
     <div className="flex h-full flex-col">
+      {/* Companion switcher — only show if multiple companions */}
+      {companions.length > 1 && (
+        <CompanionSwitcher companions={companions} activeId={activeId} />
+      )}
+
       {/* Header */}
       <ChatHeader
         name={companionName}
         avatarUrl={companionAvatarUrl}
-        relationship={companionRelationship as Parameters<typeof ChatHeader>[0]["relationship"]}
+        relationship={companionRelationship as Relationship}
       />
 
       {/* Quota bar */}
@@ -110,7 +164,7 @@ function ChatInterface({
           <WelcomeMessage
             companionName={companionName}
             companionAvatarUrl={companionAvatarUrl}
-            relationship={companionRelationship as Parameters<typeof WelcomeMessage>[0]["relationship"]}
+            relationship={companionRelationship as Relationship}
             companionId={companionId}
             isFirstConversation={true}
           />
