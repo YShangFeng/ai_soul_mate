@@ -6,7 +6,9 @@ import { useCompanion } from "@/hooks/use-companion";
 import { RelationshipSettings } from "@/components/settings/relationship-settings";
 import { SubscriptionPanel } from "@/components/settings/subscription-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, User, CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, User, CreditCard, PlusCircle } from "lucide-react";
+import Link from "next/link";
 
 /**
  * Settings Page — companion management + subscription.
@@ -34,6 +36,22 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6 px-4 pb-24 pt-20">
+      {/* Create New Companion */}
+      <Card className="border-border/40 border-dashed">
+        <CardContent className="flex items-center justify-between py-4">
+          <div>
+            <p className="font-medium">Create a new companion</p>
+            <p className="text-sm text-muted-foreground">Start fresh with a different soul mate</p>
+          </div>
+          <Button asChild size="sm" variant="outline" className="gap-1 border-brand-purple/30 text-brand-purple">
+            <Link href="/upload">
+              <PlusCircle className="h-4 w-4" />
+              Create
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Relationship Settings */}
       <Card className="border-border/40">
         <CardHeader>

@@ -121,8 +121,8 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   }, []);
 
-  const plan = subscription?.plan ?? "free";
-  const status = subscription?.status ?? "free";
+  const plan = subscription?.plan ?? "pro";
+  const status = subscription?.status ?? "active";
   const isTrialing = status === "trialing";
 
   return {
