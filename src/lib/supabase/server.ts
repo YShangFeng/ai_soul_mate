@@ -1,13 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Server-side Supabase client for Next.js App Router.
- * Use in Server Components, Server Actions, and Route Handlers.
- * Handles cookie-based session management automatically.
  */
-export async function createClient() {
+export async function createClient(): Promise<SupabaseClient<Database>> {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
@@ -24,11 +23,10 @@ export async function createClient() {
               cookieStore.set(name, value, options),
             );
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing sessions.
+            // Called from Server Component — safe to ignore
           }
         },
       },
     },
-  );
+  ) as unknown as SupabaseClient<Database>;
 }
