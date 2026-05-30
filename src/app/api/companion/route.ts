@@ -83,27 +83,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Count existing companions (limit to 1 for free, 5 for pro)
+  // Count existing companions (limit: 5, payment system not yet enabled)
   const { count } = await supabase
     .from("companions")
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id);
 
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("plan")
-    .eq("user_id", user.id)
-    .single();
-
-  const isPro = subscription?.plan === "pro";
-  const maxCompanions = isPro ? 5 : 1;
-
-  if ((count ?? 0) >= maxCompanions) {
+  if ((count ?? 0) >= 5) {
     return NextResponse.json(
       {
         error: {
           code: "LIMIT_REACHED",
-          message: `You can create up to ${maxCompanions} companion${maxCompanions === 1 ? "" : "s"}. ${isPro ? "" : "Upgrade to Pro for up to 5 companions."}`,
+          message: "You can create up to 5 companions.",
         },
       },
       { status: 429 },
