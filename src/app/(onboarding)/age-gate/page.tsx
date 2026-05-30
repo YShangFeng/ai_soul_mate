@@ -19,6 +19,7 @@ export default function AgeGatePage() {
     if (isAuthLoading || !user) return;
 
     async function checkExisting() {
+      if (!user) return;
       try {
         // Check if age already verified in session
         const ageVerified = user.user_metadata?.age_verified === true;
