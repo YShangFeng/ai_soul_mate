@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Heart, Upload, Sparkles, ArrowDown } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Heart, Upload, Sparkles, ArrowDown, MessageCircle } from "lucide-react";
 
 // ============================================
 // Hero Section
 // ============================================
 
 export function HeroSection() {
+  const { user } = useAuth();
+
+  // Logged-in users go to chat, new users go to signup
+  const ctaHref = user ? "/chat" : "/signup";
+  const ctaLabel = user ? "Go to Chat" : "Upload Your Photo";
+  const ctaIcon = user ? <MessageCircle className="h-5 w-5" /> : <Upload className="h-5 w-5" />;
   return (
     <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-4 text-center">
       {/* Background effects */}
@@ -36,16 +43,17 @@ export function HeroSection() {
 
         {/* Subtitle */}
         <p className="mx-auto max-w-xl text-lg text-muted-foreground sm:text-xl">
-          Upload a photo and let AI create your perfect companion —
-          someone who truly understands you, always there when you need them.
+          {user
+            ? "Continue your conversation with your AI companion."
+            : "Upload a photo and let AI create your perfect companion — someone who truly understands you, always there when you need them."}
         </p>
 
         {/* CTAs */}
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <Button asChild size="lg" className="gap-2 px-8 text-base">
-            <Link href="/signup">
-              <Upload className="h-5 w-5" />
-              Upload Your Photo
+            <Link href={ctaHref}>
+              {ctaIcon}
+              {ctaLabel}
             </Link>
           </Button>
           <Button
