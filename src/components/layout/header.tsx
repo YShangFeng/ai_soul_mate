@@ -19,11 +19,6 @@ export function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Don't render on app pages — ChatHeader handles navigation there
-  if (APP_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
-    return null;
-  }
-
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -33,6 +28,11 @@ export function Header() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  // Don't render on app pages — ChatHeader handles navigation there
+  if (APP_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
+    return null;
+  }
 
   async function handleSignOut() {
     await signOut();
