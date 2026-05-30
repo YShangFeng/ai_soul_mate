@@ -140,7 +140,7 @@ function ChatInterface({
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* ── Fixed top section ── */}
       {companions.length > 1 && (
         <CompanionSwitcher companions={companions} activeId={activeId} />
