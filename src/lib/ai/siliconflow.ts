@@ -1,16 +1,4 @@
-import OpenAI from "openai";
-
-// ============================================
-// SiliconFlow API Client (OpenAI-compatible)
-// ============================================
-
-const API_KEY = process.env.SILICONFLOW_API_KEY!;
-const BASE_URL = process.env.SILICONFLOW_BASE_URL || "https://api.siliconflow.cn/v1";
-
-const client = new OpenAI({
-  apiKey: API_KEY,
-  baseURL: BASE_URL,
-});
+// SiliconFlow API Client (direct fetch for max compatibility)
 
 // ============================================
 // Types
@@ -104,13 +92,6 @@ export async function generateAvatar(
 
 const CHAT_MODEL = "deepseek-ai/DeepSeek-V4-Pro";
 
-/**
- * Send a chat completion request to SiliconFlow using the OpenAI SDK.
- * Supports streaming via the `stream` parameter.
- *
- * Non-streaming: returns the full response text.
- * Streaming: returns a ReadableStream for the caller to consume.
- */
 export async function chatCompletion(
   params: ChatCompletionParams,
 ): Promise<ReadableStream | string> {
@@ -122,25 +103,31 @@ export async function chatCompletion(
     stream = false,
   } = params;
 
-  if (stream) {
-    const response = await client.chat.completions.create({
+  // Use direct fetch for better SiliconFlow compatibility
+  const response = await fetch(`${BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
       model,
-      messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+      messages,
       temperature,
       max_tokens: maxTokens,
-      stream: true,
-    });
-
-    return response.toReadableStream();
-  }
-
-  const response = await client.chat.completions.create({
-    model,
-    messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-    temperature,
-    max_tokens: maxTokens,
-    stream: false,
+      stream,
+    }),
   });
 
-  return response.choices[0]?.message?.content ?? "";
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`SiliconFlow chat failed: ${response.status} — ${errorText}`);
+  }
+
+  if (stream) {
+    return response.body!;
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? "";
 }
