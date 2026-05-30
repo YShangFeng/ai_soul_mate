@@ -1,20 +1,12 @@
-// @ts-nocheck - https://github.com/supabase/ssr/issues - SSR 0.5.2 GenericSchema bug
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkCompanionLimit } from "@/lib/permissions";
 import type { CompanionRelationship, CompanionGender, CompanionStyle } from "@/types/database";
 
-/**
- * POST /api/companion
- *
- * Create a new AI companion record.
- *
- * Body: { name, relationship, gender, style, avatarUrl }
- * Returns: Companion object
- */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
-  // Authenticate
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -25,7 +17,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Parse body
   const body = await request.json();
   const { name, relationship, gender, style, avatarUrl } = body as {
     name: string;
@@ -35,7 +26,6 @@ export async function POST(request: NextRequest) {
     avatarUrl?: string;
   };
 
-  // Validate name
   if (!name || typeof name !== "string") {
     return NextResponse.json(
       { error: { code: "BAD_REQUEST", message: "Name is required." } },
@@ -51,12 +41,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate relationship
   const validRelationships: CompanionRelationship[] = [
-    "romantic_partner",
-    "close_friend",
-    "life_mentor",
-    "fictional_character",
+    "romantic_partner", "close_friend", "life_mentor", "fictional_character",
   ];
   if (!validRelationships.includes(relationship)) {
     return NextResponse.json(
@@ -65,7 +51,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate gender
   const validGenders: CompanionGender[] = ["male", "female", "non_binary", "any"];
   if (!validGenders.includes(gender)) {
     return NextResponse.json(
@@ -74,7 +59,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate style
   const validStyles: CompanionStyle[] = ["realistic", "anime", "fantasy"];
   if (!validStyles.includes(style)) {
     return NextResponse.json(
@@ -83,25 +67,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Count existing companions (limit: 5, payment system not yet enabled)
-  const { count } = await supabase
-    .from("companions")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id);
-
-  if ((count ?? 0) >= 5) {
+  // Centralized companion limit check
+  const limitCheck = await checkCompanionLimit(user.id, supabase);
+  if (!limitCheck.allowed) {
     return NextResponse.json(
-      {
-        error: {
-          code: "LIMIT_REACHED",
-          message: "You can create up to 5 companions.",
-        },
-      },
+      { error: { code: "LIMIT_REACHED", message: limitCheck.reason } },
       { status: 429 },
     );
   }
 
-  // Create companion
   const { data: companion, error } = await supabase
     .from("companions")
     .insert({

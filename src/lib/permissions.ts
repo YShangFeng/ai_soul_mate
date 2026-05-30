@@ -1,0 +1,230 @@
+// @ts-nocheck - https://github.com/supabase/ssr/issues - SSR 0.5.2 GenericSchema bug
+
+// ============================================
+// 权限中心 — 整个应用唯一的配额/功能开关
+// ============================================
+//
+// 将来接入支付系统时，只需：
+//   1. PAYMENT_ENABLED 改为 true
+//   2. 确认 SUBSCRIPTION_TABLE 查询路径正确
+//   3. 所有 API route 和前端 hook 无需修改
+//
+// ============================================
+
+import { createClient } from "@/lib/supabase/server";
+
+// ============================================
+// 🔧 主开关：支付系统是否启用
+//    false → 所有用户享受 PRO 权限
+//    true  → 根据 subscriptions 表区分 free/pro
+// ============================================
+const PAYMENT_ENABLED = false;
+
+// ============================================
+// 限额配置（未来接入支付系统后启用）
+// ============================================
+export const LIMITS = {
+  FREE: {
+    chatMessagesPerDay: 10,
+    avatarGenerationsPerDay: 3,
+    maxCompanions: 2,
+  },
+  PRO: {
+    chatMessagesPerDay: Number.POSITIVE_INFINITY,
+    avatarGenerationsPerDay: Number.POSITIVE_INFINITY,
+    maxCompanions: 5,
+  },
+} as const;
+
+// ============================================
+// 结果类型
+// ============================================
+export interface FeatureCheck {
+  allowed: boolean;
+  reason?: string;
+  limit: number;
+  used: number;
+  remaining: number;
+}
+
+export interface QuotaState {
+  used: number;
+  limit: number;
+  remaining: number;
+  isPro: boolean;
+  isLoading: boolean;
+}
+
+// ============================================
+// 内部：判断用户等级
+// ============================================
+async function getUserTier(userId: string): Promise<"pro" | "free"> {
+  if (!PAYMENT_ENABLED) return "pro";
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("subscriptions")
+    .select("plan")
+    .eq("user_id", userId)
+    .single();
+
+  return data?.plan === "pro" ? "pro" : "free";
+}
+
+// 前端版本（接收 supabase client）
+export async function getUserTierClient(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<"pro" | "free"> {
+  if (!PAYMENT_ENABLED) return "pro";
+
+  const { data } = await supabase
+    .from("subscriptions")
+    .select("plan")
+    .eq("user_id", userId)
+    .single();
+
+  return data?.plan === "pro" ? "pro" : "free";
+}
+
+// ============================================
+// 1. 聊天配额检查（API route 用）
+// ============================================
+export async function checkChatQuota(
+  userId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<FeatureCheck> {
+  const tier = await getUserTier(userId);
+  const limit = LIMITS[tier === "pro" ? "PRO" : "FREE"].chatMessagesPerDay;
+
+  if (limit === Number.POSITIVE_INFINITY) {
+    return { allowed: true, limit: Number.POSITIVE_INFINITY, used: 0, remaining: Number.POSITIVE_INFINITY };
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  // Count today's user messages across all companions
+  const { count } = await supabase
+    .from("messages")
+    .select("*", { count: "exact", head: true })
+    .eq("role", "user")
+    .gte("created_at", `${today}T00:00:00Z`)
+    .lte("created_at", `${today}T23:59:59Z`);
+
+  const used = count ?? 0;
+  const remaining = Math.max(0, limit - used);
+
+  return {
+    allowed: used < limit,
+    reason: used >= limit ? `Daily message limit reached (${limit}/day)` : undefined,
+    limit,
+    used,
+    remaining,
+  };
+}
+
+// ============================================
+// 2. 伴侣创建检查
+// ============================================
+export async function checkCompanionLimit(
+  userId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<FeatureCheck> {
+  const tier = await getUserTier(userId);
+  const maxCompanions = LIMITS[tier === "pro" ? "PRO" : "FREE"].maxCompanions;
+
+  const { count } = await supabase
+    .from("companions")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  const used = count ?? 0;
+  const remaining = Math.max(0, maxCompanions - used);
+
+  return {
+    allowed: used < maxCompanions,
+    reason: used >= maxCompanions ? `You can create up to ${maxCompanions} companions.` : undefined,
+    limit: maxCompanions,
+    used,
+    remaining,
+  };
+}
+
+// ============================================
+// 3. 头像生成配额检查
+// ============================================
+export async function checkAvatarQuota(
+  userId: string,
+): Promise<FeatureCheck> {
+  const tier = await getUserTier(userId);
+  const limit = LIMITS[tier === "pro" ? "PRO" : "FREE"].avatarGenerationsPerDay;
+
+  if (limit === Number.POSITIVE_INFINITY) {
+    return { allowed: true, limit: Number.POSITIVE_INFINITY, used: 0, remaining: Number.POSITIVE_INFINITY };
+  }
+
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("daily_generations_used")
+    .eq("id", userId)
+    .single();
+
+  const used = profile?.daily_generations_used ?? 0;
+  const remaining = Math.max(0, limit - used);
+
+  return {
+    allowed: used < limit,
+    reason: used >= limit ? `Daily generation limit reached (${limit}/day)` : undefined,
+    limit,
+    used,
+    remaining,
+  };
+}
+
+// ============================================
+// 4. 前端配额状态（useQuota hook 用）
+// ============================================
+export async function getQuotaState(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<QuotaState> {
+  const tier = await getUserTierClient(supabase, userId);
+  const proLimits = LIMITS.PRO;
+  const freeLimits = LIMITS.FREE;
+  const isPro = tier === "pro";
+  const limit = isPro ? proLimits.chatMessagesPerDay : freeLimits.chatMessagesPerDay;
+
+  if (isPro) {
+    return { used: 0, limit: Number.POSITIVE_INFINITY, remaining: Number.POSITIVE_INFINITY, isPro: true, isLoading: false };
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  const { count } = await supabase
+    .from("messages")
+    .select("*", { count: "exact", head: true })
+    .eq("role", "user")
+    .gte("created_at", `${today}T00:00:00Z`)
+    .lte("created_at", `${today}T23:59:59Z`);
+
+  const used = count ?? 0;
+  return { used, limit, remaining: Math.max(0, limit - used), isPro: false, isLoading: false };
+}
+
+// ============================================
+// 5. 增量计数（头像生成后用）
+// ============================================
+export async function incrementAvatarUsage(userId: string): Promise<void> {
+  if (!PAYMENT_ENABLED) return; // no tracking needed when payment is off
+
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("daily_generations_used")
+    .eq("id", userId)
+    .single();
+
+  await supabase
+    .from("profiles")
+    .update({ daily_generations_used: (profile?.daily_generations_used ?? 0) + 1 })
+    .eq("id", userId);
+}

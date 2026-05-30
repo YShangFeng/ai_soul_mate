@@ -1,37 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useSupabase } from "@/components/providers/supabase-provider";
+import { getQuotaState, type QuotaState } from "@/lib/permissions";
 
-// ============================================
-// Types
-// ============================================
-
-export interface QuotaState {
-  used: number;
-  limit: number;
-  remaining: number;
-  isPro: boolean;
-  isLoading: boolean;
-}
-
-// ============================================
-// Hook — always VIP (payment system not yet enabled)
-// ============================================
+export type { QuotaState };
 
 export function useQuota(): QuotaState & { refresh: () => Promise<void> } {
-  const [quota] = useState<QuotaState>({
+  const { supabase, user } = useSupabase();
+  const [quota, setQuota] = useState<QuotaState>({
     used: 0,
-    limit: Infinity,
-    remaining: Infinity,
-    isPro: true,
-    isLoading: false,
+    limit: 10,
+    remaining: 10,
+    isPro: false,
+    isLoading: true,
   });
 
-  // Still provide a refresh function in case we add payments later
-  const refresh = async () => {};
+  const refresh = useCallback(async () => {
+    if (!user) {
+      setQuota((prev) => ({ ...prev, isLoading: false }));
+      return;
+    }
+    try {
+      const state = await getQuotaState(supabase, user.id);
+      setQuota(state);
+    } catch {
+      // On error, default to PRO (payment is off anyway)
+      setQuota({
+        used: 0,
+        limit: Number.POSITIVE_INFINITY,
+        remaining: Number.POSITIVE_INFINITY,
+        isPro: true,
+        isLoading: false,
+      });
+    }
+  }, [supabase, user]);
 
-  // Prevent the "setState during render" edge case
-  useEffect(() => {}, []);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   return { ...quota, refresh };
 }

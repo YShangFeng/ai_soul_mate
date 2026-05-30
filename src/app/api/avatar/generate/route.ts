@@ -1,15 +1,12 @@
-// @ts-nocheck - https://github.com/supabase/ssr/issues - SSR 0.5.2 GenericSchema bug
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateAvatar } from "@/lib/ai/siliconflow";
 import { buildAvatarPrompt, NEGATIVE_PROMPT } from "@/lib/ai/prompts";
+import { checkAvatarQuota, incrementAvatarUsage } from "@/lib/permissions";
 import type { CompanionGender, CompanionStyle, Relationship } from "@/types/companion";
 
-/**
- * POST /api/avatar/generate
- * Generate avatar image. Unlimited (payment system not yet enabled).
- */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
@@ -39,9 +36,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Centralized quota check
+  const quota = await checkAvatarQuota(user.id);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: { code: "LIMIT_REACHED", message: quota.reason } },
+      { status: 429 },
+    );
+  }
+
   try {
     const prompt = buildAvatarPrompt(gender, style, relationship);
-
     const result = await generateAvatar({
       prompt,
       negativePrompt: NEGATIVE_PROMPT,
@@ -49,18 +54,15 @@ export async function POST(request: NextRequest) {
       height: 1024,
     });
 
-    // Clean up uploaded photo from storage
+    await incrementAvatarUsage(user.id);
+
     if (imagePath) {
       const adminClient = createAdminClient();
       await adminClient.storage.from("avatars").remove([imagePath]);
     }
 
     return NextResponse.json({
-      data: {
-        imageUrl: result.imageUrl,
-        seed: result.seed,
-        prompt,
-      },
+      data: { imageUrl: result.imageUrl, seed: result.seed, prompt },
     });
   } catch (err) {
     console.error("Avatar generation error:", err);

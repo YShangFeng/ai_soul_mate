@@ -1,14 +1,11 @@
-// @ts-nocheck - https://github.com/supabase/ssr/issues - SSR 0.5.2 GenericSchema bug
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateAvatar } from "@/lib/ai/siliconflow";
 import { buildAvatarPrompt, NEGATIVE_PROMPT } from "@/lib/ai/prompts";
+import { checkAvatarQuota, incrementAvatarUsage } from "@/lib/permissions";
 import type { CompanionGender, CompanionStyle, Relationship } from "@/types/companion";
 
-/**
- * POST /api/avatar/regenerate
- * Regenerate avatar image. Unlimited (payment system not yet enabled).
- */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
@@ -36,6 +33,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Centralized quota check
+  const quota = await checkAvatarQuota(user.id);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: { code: "LIMIT_REACHED", message: quota.reason } },
+      { status: 429 },
+    );
+  }
+
   try {
     const prompt = buildAvatarPrompt(gender, style, relationship);
     const result = await generateAvatar({
@@ -45,12 +51,10 @@ export async function POST(request: NextRequest) {
       height: 1024,
     });
 
+    await incrementAvatarUsage(user.id);
+
     return NextResponse.json({
-      data: {
-        imageUrl: result.imageUrl,
-        seed: result.seed,
-        prompt,
-      },
+      data: { imageUrl: result.imageUrl, seed: result.seed, prompt },
     });
   } catch (err) {
     console.error("Regenerate error:", err);

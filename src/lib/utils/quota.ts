@@ -1,17 +1,13 @@
-// @ts-nocheck - https://github.com/supabase/ssr/issues - SSR 0.5.2 GenericSchema bug
+// @ts-nocheck
+// Deprecated — all quota logic moved to @/lib/permissions
+// This file kept for backward compatibility with any remaining imports
 
-export interface QuotaResult {
-  allowed: boolean;
-  used: number;
-  limit: number;
-  remaining: number;
-  isPro: boolean;
-}
+export {
+  checkChatQuota as checkMessageQuota,
+  type QuotaState as QuotaResult,
+} from "@/lib/permissions";
 
-export async function checkMessageQuota(_userId: string): Promise<QuotaResult> {
-  return { allowed: true, used: 0, limit: Infinity, remaining: Infinity, isPro: true };
-}
-
+// Stub — permissions module handles this now
 export async function incrementMessageCount(_userId: string): Promise<void> {
-  // No-op — VIP users have unlimited messages
+  // No-op; permissions module manages limits centrally
 }
