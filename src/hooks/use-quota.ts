@@ -34,7 +34,7 @@ export function useQuota(): QuotaState & { refresh: () => Promise<void> } {
         isLoading: false,
       });
     }
-  }, [supabase, user]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     refresh();

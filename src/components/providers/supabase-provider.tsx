@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import type { User, Session, SupabaseClient } from "@supabase/supabase-js";
 
@@ -17,10 +17,6 @@ interface SupabaseContextValue {
 
 const SupabaseContext = createContext<SupabaseContextValue | undefined>(undefined);
 
-/**
- * Access the Supabase client and auth state from any Client Component.
- * Must be used within <SupabaseProvider>.
- */
 export function useSupabase(): SupabaseContextValue {
   const context = useContext(SupabaseContext);
   if (!context) {
@@ -45,7 +41,6 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Listen for auth state changes (sign in, sign out, token refresh)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
@@ -54,7 +49,6 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
       setIsLoading(false);
     });
 
-    // Initial session check
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
@@ -64,8 +58,14 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
+  // Memoize context value to prevent infinite re-renders in consumer hooks
+  const value = useMemo(
+    () => ({ supabase, user, session, isLoading }),
+    [supabase, user, session, isLoading],
+  );
+
   return (
-    <SupabaseContext.Provider value={{ supabase, user, session, isLoading }}>
+    <SupabaseContext.Provider value={value}>
       {children}
     </SupabaseContext.Provider>
   );

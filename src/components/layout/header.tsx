@@ -43,7 +43,7 @@ export function Header() {
   const initials = user?.email?.split("@")[0]?.slice(0, 2).toUpperCase() ?? "?";
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
+    <header data-root className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 text-lg font-bold">

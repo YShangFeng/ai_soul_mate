@@ -46,7 +46,7 @@ export function useCompanions(): UseCompanionsResult {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase, user]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     refetch();

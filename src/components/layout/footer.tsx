@@ -7,7 +7,7 @@ import { Heart } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/30 bg-card/40 px-4 py-8 backdrop-blur-sm">
+    <footer data-root className="border-t border-border/30 bg-card/40 px-4 py-8 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
         {/* Brand */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
