@@ -76,7 +76,7 @@ export const createCompanionSchema = z.object({
 export const imageUploadSchema = z.object({
   size: z.number().max(FREE_TIER.MAX_UPLOAD_SIZE, "Image must be 10MB or less"),
   type: z.string().refine(
-    (type) => FREE_TIER.ALLOWED_IMAGE_TYPES.includes(type),
+    (type) => (FREE_TIER.ALLOWED_IMAGE_TYPES as readonly string[]).includes(type),
     "Image must be JPEG, PNG, or WebP",
   ),
 });
