@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, User } from "lucide-react";
 import { RELATIONSHIP_LABELS, type Relationship } from "@/types/companion";
 
 // ============================================
@@ -56,12 +56,19 @@ export function ChatHeader({ name, avatarUrl, relationship }: ChatHeaderProps) {
         </Badge>
       </div>
 
-      {/* Settings */}
-      <Button variant="ghost" size="icon" asChild className="shrink-0">
-        <Link href="/settings" aria-label="Settings">
-          <Settings className="h-5 w-5 text-muted-foreground" />
-        </Link>
-      </Button>
+      {/* Profile + Settings */}
+      <div className="flex shrink-0 items-center gap-1">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/profile" aria-label="Profile">
+            <User className="h-5 w-5 text-muted-foreground" />
+          </Link>
+        </Button>
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/settings" aria-label="Settings">
+            <Settings className="h-5 w-5 text-muted-foreground" />
+          </Link>
+        </Button>
+      </div>
     </header>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BottomNav } from "@/components/layout/bottom-nav";
 import { useCompanion } from "@/hooks/use-companion";
 import { Loader2 } from "lucide-react";
 
@@ -45,11 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      {/* Main content area */}
       <main className="flex-1 min-h-0 overflow-hidden">{children}</main>
-
-      {/* Bottom navigation */}
-      <BottomNav />
     </div>
   );
 }
