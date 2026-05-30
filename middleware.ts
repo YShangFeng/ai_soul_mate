@@ -7,7 +7,6 @@ const STATIC_PREFIXES = ["/_next", "/api", "/favicon.ico", "/public"];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Quick pass for static assets
   if (STATIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next();
   }
@@ -33,7 +32,6 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Not authenticated: only allow public pages
   if (!user) {
     if (!PUBLIC_PATHS.includes(pathname)) {
       const loginUrl = new URL("/login", request.url);
@@ -43,15 +41,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hasCompletedAgeGate = user.user_metadata?.age_verified === true;
+  // Check age verification — first from token, then from DB
+  let ageVerified = user.user_metadata?.age_verified === true;
 
-  // Authenticated but not age-gated → must complete age gate first
-  if (!hasCompletedAgeGate && pathname !== "/age-gate") {
+  if (!ageVerified) {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("age_verified")
+        .eq("id", user.id)
+        .single();
+      ageVerified = profile?.age_verified === true;
+    } catch {
+      // DB check failed, fall back to token value
+    }
+  }
+
+  if (!ageVerified && pathname !== "/age-gate") {
     return NextResponse.redirect(new URL("/age-gate", request.url));
   }
 
-  // Authenticated + onboarded: visiting root or auth pages → straight to chat
-  if (hasCompletedAgeGate && ["/", "/login", "/signup", "/age-gate"].includes(pathname)) {
+  if (ageVerified && ["/", "/login", "/signup", "/age-gate"].includes(pathname)) {
     return NextResponse.redirect(new URL("/chat", request.url));
   }
 

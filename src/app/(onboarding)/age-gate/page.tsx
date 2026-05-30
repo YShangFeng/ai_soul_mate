@@ -1,20 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AgeGateDialog, type AgeVerificationResult } from "@/components/onboarding/age-gate-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useSupabase } from "@/components/providers/supabase-provider";
+import { Loader2 } from "lucide-react";
 
-/**
- * Age Gate — Step 1 of onboarding.
- * Verifies user age before allowing access to the rest of the flow.
- */
 export default function AgeGatePage() {
   const router = useRouter();
   const { supabase } = useSupabase();
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+
+  // On mount, check if user already completed onboarding
+  useEffect(() => {
+    if (isAuthLoading || !user) return;
+
+    async function checkExisting() {
+      try {
+        // Check if age already verified in session
+        const ageVerified = user.user_metadata?.age_verified === true;
+
+        // Also check database for companion
+        const { data: companions } = await supabase
+          .from("companions")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        const hasCompanion = companions && companions.length > 0;
+
+        if (ageVerified && hasCompanion) {
+          // Fully onboarded — go to chat
+          window.location.href = "/chat";
+          return;
+        }
+
+        if (ageVerified) {
+          // Age verified but no companion — go to upload
+          router.push("/upload");
+          return;
+        }
+
+        // Update metadata from DB if needed
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("age_verified")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.age_verified) {
+          // DB says verified, but session doesn't — update session
+          await supabase.auth.updateUser({ data: { age_verified: true } });
+
+          if (hasCompanion) {
+            window.location.href = "/chat";
+          } else {
+            router.push("/upload");
+          }
+          return;
+        }
+      } catch (err) {
+        console.error("Check existing error:", err);
+      } finally {
+        setIsChecking(false);
+      }
+    }
+
+    checkExisting();
+  }, [isAuthLoading, user, supabase, router]);
 
   async function handleVerify(result: AgeVerificationResult) {
     if (!user) return;
@@ -22,10 +78,8 @@ export default function AgeGatePage() {
     setIsVerifying(true);
 
     try {
-      // Calculate birth date from year (use Jan 1 of that year)
       const birthDate = `${result.birthYear}-01-01`;
 
-      // Update profile with age verification
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -39,21 +93,26 @@ export default function AgeGatePage() {
         return;
       }
 
-      // Update session metadata so middleware allows progression
       await supabase.auth.updateUser({
         data: { age_verified: true },
       });
 
-      // Store age group for the rest of the flow
       sessionStorage.setItem("ageGroup", result.ageGroup);
 
-      // Navigate to upload step
       router.push("/upload");
     } catch (err) {
       console.error("Age verification error:", err);
     } finally {
       setIsVerifying(false);
     }
+  }
+
+  if (isAuthLoading || isChecking) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-purple" />
+      </div>
+    );
   }
 
   return (
