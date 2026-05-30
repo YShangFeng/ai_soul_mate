@@ -4,11 +4,18 @@ import { createClient } from "@/lib/supabase/server";
 import { chatCompletion } from "@/lib/ai/siliconflow";
 import { getSystemPrompt } from "@/lib/ai/prompts";
 import { moderateContent, hasCriticalFlags } from "@/lib/ai/moderation";
-import { checkMessageQuota, incrementMessageCount } from "@/lib/utils/quota";
 
 // ============================================
 // POST /api/chat — Send a message (SSE streaming)
 // ============================================
+
+const MAX_HISTORY = 8;       // reduced from 20 to avoid "input too long"
+const MAX_MSG_LENGTH = 400;  // truncate long messages in context
+
+function truncate(text: string): string {
+  if (text.length <= MAX_MSG_LENGTH) return text;
+  return text.slice(0, MAX_MSG_LENGTH) + "...";
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -53,46 +60,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 4. Quota check
-  const quota = await checkMessageQuota(user.id);
-
-  // getFirstCompanionId uses a restrictive query; we already have our companion
-  // Rebuild the quota check with our known companionId
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("plan")
-    .eq("user_id", user.id)
-    .single();
-  const isPro = sub?.plan === "pro";
-
-  if (!isPro) {
-    const today = new Date().toISOString().split("T")[0];
-    const { count } = await supabase
-      .from("messages")
-      .select("*", { count: "exact", head: true })
-      .eq("companion_id", companionId)
-      .eq("role", "user")
-      .gte("created_at", `${today}T00:00:00Z`)
-      .lte("created_at", `${today}T23:59:59Z`);
-
-    const used = count ?? 0;
-    if (used >= 10) {
-      return NextResponse.json(
-        {
-          error: {
-            code: "QUOTA_EXCEEDED",
-            message: "Daily message limit reached (10/day). Upgrade to Pro for unlimited messages.",
-          },
-        },
-        { status: 429 },
-      );
-    }
-  }
-
-  // 5. Content moderation (user input)
+  // 4. Content moderation (user input)
   const userModeration = await moderateContent(message.trim());
   if (hasCriticalFlags(userModeration)) {
-    // Store moderated message
     await supabase.from("messages").insert({
       companion_id: companionId,
       role: "user",
@@ -112,7 +82,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 6. Store user message
+  // 5. Store user message
   const { data: userMessage, error: insertError } = await supabase
     .from("messages")
     .insert({
@@ -133,35 +103,32 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 7. Build conversation context
+  // 6. Build conversation context (compact)
   const systemPrompt = getSystemPrompt(
     companion.relationship as Parameters<typeof getSystemPrompt>[0],
     companion.name,
   );
 
-  // Fetch last 20 messages for context
+  // Fetch limited history with truncated content
   const { data: history } = await supabase
     .from("messages")
     .select("role, content")
     .eq("companion_id", companionId)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(MAX_HISTORY);
 
   const historyMessages = (history ?? []).reverse().map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content,
+    role: m.role === "companion" ? ("assistant" as const) : ("user" as const),
+    content: truncate(m.content),
   }));
 
   const chatMessages = [
     { role: "system" as const, content: systemPrompt },
-    ...historyMessages.map((m) => ({
-      role: m.role === "companion" ? ("assistant" as const) : ("user" as const),
-      content: m.content,
-    })),
+    ...historyMessages,
     { role: "user" as const, content: message.trim() },
   ];
 
-  // 8. Stream the AI response
+  // 7. Stream the AI response
   const encoder = new TextEncoder();
   let fullResponse = "";
 
@@ -214,37 +181,23 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // 9. Moderate the AI response
+        // 8. Moderate & store AI response
         if (fullResponse.trim()) {
           const aiModeration = await moderateContent(fullResponse);
           const isFlagged = hasCriticalFlags(aiModeration);
 
-          // 10. Store AI response
-          const { data: aiMessage } = await supabase
-            .from("messages")
-            .insert({
-              companion_id: companionId,
-              role: "companion",
-              content: fullResponse,
-              moderated: isFlagged,
-              moderation_flagged: aiModeration.flagged,
-            })
-            .select()
-            .single();
-
-          // 11. Increment message count
-          await incrementMessageCount(user.id);
-
-          // 12. Send final metadata
-          const remaining = isPro
-            ? Infinity
-            : Math.max(0, 10 - (await getTodayCount(supabase, companionId)));
+          await supabase.from("messages").insert({
+            companion_id: companionId,
+            role: "companion",
+            content: fullResponse,
+            moderated: isFlagged,
+            moderation_flagged: aiModeration.flagged,
+          });
 
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
-                messageId: aiMessage?.id,
-                quota_remaining: remaining,
+                done: true,
                 moderated: isFlagged,
               })}\n\n`,
             ),
@@ -256,7 +209,7 @@ export async function POST(request: NextRequest) {
         console.error("Stream error:", err);
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ error: "Stream failed" })}\n\n`,
+            `data: ${JSON.stringify({ error: "AI response failed — please try again." })}\n\n`,
           ),
         );
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
@@ -283,7 +236,6 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
 
-  // Authenticate
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -321,7 +273,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Build query
   let query = supabase
     .from("messages")
     .select("*")
@@ -330,7 +281,6 @@ export async function GET(request: NextRequest) {
     .limit(limit);
 
   if (before) {
-    // Get the timestamp of the "before" message
     const { data: beforeMsg } = await supabase
       .from("messages")
       .select("created_at")
@@ -353,23 +303,4 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({ data: messages });
-}
-
-// ============================================
-// Helpers
-// ============================================
-
-async function getTodayCount(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  companionId: string,
-): Promise<number> {
-  const today = new Date().toISOString().split("T")[0];
-  const { count } = await supabase
-    .from("messages")
-    .select("*", { count: "exact", head: true })
-    .eq("companion_id", companionId)
-    .eq("role", "user")
-    .gte("created_at", `${today}T00:00:00Z`)
-    .lte("created_at", `${today}T23:59:59Z`);
-  return count ?? 0;
 }

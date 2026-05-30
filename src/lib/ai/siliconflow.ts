@@ -1,7 +1,9 @@
-// SiliconFlow API Client (direct fetch for max compatibility)
+// AI API Client — supports both DeepSeek direct & SiliconFlow proxy
 
-const API_KEY = process.env.SILICONFLOW_API_KEY!;
-const BASE_URL = process.env.SILICONFLOW_BASE_URL || "https://api.siliconflow.cn/v1";
+const SILICONFLOW_KEY = process.env.SILICONFLOW_API_KEY!;
+const SILICONFLOW_BASE = process.env.SILICONFLOW_BASE_URL || "https://api.siliconflow.cn/v1";
+const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY;
+const DEEPSEEK_BASE = "https://api.deepseek.com/v1";
 
 // ============================================
 // Types
@@ -31,16 +33,11 @@ export interface ChatCompletionParams {
 }
 
 // ============================================
-// Avatar Generation (Stable Diffusion via SiliconFlow)
+// Avatar Generation (Kwai-Kolors via SiliconFlow)
 // ============================================
 
-// Kwai-Kolors via SiliconFlow
 const SD_MODEL = "Kwai-Kolors/Kolors";
 
-/**
- * Generate an avatar image using SiliconFlow's image generation endpoint.
- * Uses native fetch as SiliconFlow's image API deviates from OpenAI's DALL-E format.
- */
 export async function generateAvatar(
   params: GenerateAvatarParams,
 ): Promise<GenerateAvatarResult> {
@@ -54,10 +51,10 @@ export async function generateAvatar(
     guidanceScale = 7.5,
   } = params;
 
-  const response = await fetch(`${BASE_URL}/image/generations`, {
+  const response = await fetch(`${SILICONFLOW_BASE}/image/generations`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${API_KEY}`,
+      "Authorization": `Bearer ${SILICONFLOW_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -74,7 +71,7 @@ export async function generateAvatar(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`SiliconFlow image generation failed: ${response.status} — ${errorText}`);
+    throw new Error(`Image generation failed: ${response.status} — ${errorText}`);
   }
 
   const data = await response.json();
@@ -90,41 +87,61 @@ export async function generateAvatar(
 }
 
 // ============================================
-// Chat Completion (for T04 conversation)
+// Chat Completion — DeepSeek direct (preferred) or SiliconFlow proxy (fallback)
 // ============================================
 
-const CHAT_MODEL = "deepseek-ai/DeepSeek-V4-Pro";
+const CHAT_MODEL_SILICONFLOW = "deepseek-ai/DeepSeek-V4-Pro";
+const CHAT_MODEL_DEEPSEEK = "deepseek-chat";
+
+/**
+ * Choose the best available backend:
+ * - Direct DeepSeek API (if DEEPSEEK_API_KEY is set) — best quality
+ * - SiliconFlow proxy (fallback)
+ */
+function getChatBackend(): { apiKey: string; baseUrl: string; model: string } {
+  if (DEEPSEEK_KEY) {
+    return { apiKey: DEEPSEEK_KEY, baseUrl: DEEPSEEK_BASE, model: CHAT_MODEL_DEEPSEEK };
+  }
+  return { apiKey: SILICONFLOW_KEY, baseUrl: SILICONFLOW_BASE, model: CHAT_MODEL_SILICONFLOW };
+}
 
 export async function chatCompletion(
   params: ChatCompletionParams,
 ): Promise<ReadableStream | string> {
+  const backend = getChatBackend();
   const {
     messages,
-    model = CHAT_MODEL,
-    temperature = 0.7,
-    maxTokens = 2048,
+    model = backend.model,
+    temperature = 0.8,
+    maxTokens = 1024,
     stream = false,
   } = params;
 
-  // Use direct fetch for better SiliconFlow compatibility
-  const response = await fetch(`${BASE_URL}/chat/completions`, {
+  const requestBody: Record<string, unknown> = {
+    model,
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+    stream,
+  };
+
+  // DeepSeek direct API supports these extra params for better quality
+  if (DEEPSEEK_KEY) {
+    requestBody.top_p = 0.9;
+  }
+
+  const response = await fetch(`${backend.baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${API_KEY}`,
+      "Authorization": `Bearer ${backend.apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature,
-      max_tokens: maxTokens,
-      stream,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`SiliconFlow chat failed: ${response.status} — ${errorText}`);
+    throw new Error(`Chat API failed (${backend.baseUrl}): ${response.status} — ${errorText}`);
   }
 
   if (stream) {
