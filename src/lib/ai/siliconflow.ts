@@ -102,7 +102,7 @@ export async function generateAvatar(
 // Chat Completion (for T04 conversation)
 // ============================================
 
-const CHAT_MODEL = "deepseek-ai/DeepSeek-V3";
+const CHAT_MODEL = "deepseek-ai/DeepSeek-V4-Pro";
 
 /**
  * Send a chat completion request to SiliconFlow using the OpenAI SDK.

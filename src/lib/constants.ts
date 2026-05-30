@@ -102,9 +102,9 @@ export const PRICING = {
 // --- AI Configuration ---
 export const AI_CONFIG = {
   /** Default chat model via SiliconFlow */
-  CHAT_MODEL: "deepseek-ai/DeepSeek-V3",
+  CHAT_MODEL: "deepseek-ai/DeepSeek-V4-Pro",
   /** Fallback chat model */
-  CHAT_MODEL_FALLBACK: "deepseek-ai/DeepSeek-R1",
+  CHAT_MODEL_FALLBACK: "deepseek-ai/DeepSeek-V3",
   /** Image generation model */
   IMAGE_MODEL: "Kwai-Kolors/Kolors",
   /** Maximum conversation context tokens */
