@@ -149,15 +149,18 @@ export async function POST(request: NextRequest) {
         } else {
           const reader = aiStream.getReader();
           const decoder = new TextDecoder();
+          let buffer = ""; // Accumulate incomplete SSE lines across chunks
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
+            buffer += decoder.decode(value, { stream: true });
 
-            // Parse SSE from the AI stream
-            const lines = chunk.split("\n");
+            // Process complete lines, keep incomplete last line in buffer
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? ""; // Last line might be incomplete
+
             for (const line of lines) {
               if (!line.startsWith("data: ")) continue;
               const data = line.slice(6).trim();
@@ -177,6 +180,25 @@ export async function POST(request: NextRequest) {
               } catch {
                 // Skip unparseable chunks
               }
+            }
+          }
+
+          // Process any remaining buffered data after stream ends
+          if (buffer.startsWith("data: ")) {
+            const data = buffer.slice(6).trim();
+            if (data !== "[DONE]") {
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  fullResponse += content;
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({ content })}\n\n`,
+                    ),
+                  );
+                }
+              } catch { /* ignore */ }
             }
           }
         }

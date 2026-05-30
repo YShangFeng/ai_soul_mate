@@ -112,8 +112,8 @@ export async function chatCompletion(
   const {
     messages,
     model = backend.model,
-    temperature = 0.8,
-    maxTokens = 1024,
+    temperature = 0.7,
+    maxTokens = 2048,
     stream = false,
   } = params;
 
