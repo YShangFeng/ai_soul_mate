@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +9,6 @@ import { Eye, EyeOff, Loader2, UserPlus } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 
 export function SignupForm() {
-  const router = useRouter();
   const { signUp } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -74,7 +72,7 @@ export function SignupForm() {
         title: "Account created! 🎉",
         description: "Welcome to SoulMate.ai. Let's set up your profile.",
       });
-      router.push("/age-gate");
+      window.location.href = "/age-gate";
       router.refresh();
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");

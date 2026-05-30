@@ -38,8 +38,8 @@ export function LoginForm() {
       }
 
       toast({ title: "Welcome back! 👋", description: "Redirecting you..." });
-      router.push("/age-gate");
-      router.refresh();
+      // Use window.location for full server round-trip so middleware can route properly
+      window.location.href = "/age-gate";
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
     } finally {
