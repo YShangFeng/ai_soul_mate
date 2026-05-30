@@ -14,6 +14,14 @@ import { stripe } from "@/lib/stripe/client";
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
+  // Check Stripe configuration
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json(
+      { error: { code: "NOT_CONFIGURED", message: "Payment is not available yet. Check back soon!" } },
+      { status: 503 },
+    );
+  }
+
   // Authenticate
   const {
     data: { user },
