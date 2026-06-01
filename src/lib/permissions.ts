@@ -18,7 +18,7 @@
 //    false → 所有用户享受 PRO 权限
 //    true  → 根据 subscriptions 表区分 free/pro
 // ============================================
-const PAYMENT_ENABLED = false;
+const PAYMENT_ENABLED = true;
 
 // ============================================
 // 限额配置

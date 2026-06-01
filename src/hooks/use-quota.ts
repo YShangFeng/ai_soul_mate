@@ -25,12 +25,11 @@ export function useQuota(): QuotaState & { refresh: () => Promise<void> } {
       const state = await getQuotaState(supabase, user.id);
       setQuota(state);
     } catch {
-      // On error, default to PRO (payment is off anyway)
       setQuota({
         used: 0,
-        limit: Number.POSITIVE_INFINITY,
-        remaining: Number.POSITIVE_INFINITY,
-        isPro: true,
+        limit: 10,
+        remaining: 10,
+        isPro: false,
         isLoading: false,
       });
     }
