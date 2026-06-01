@@ -7,6 +7,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { Loader2 } from "lucide-react";
 
+/**
+ * Age gate — catch-all for users who don't have age_verified yet.
+ * New users collect age at signup, so most won't hit this page.
+ */
 export default function AgeGatePage() {
   const router = useRouter();
   const { supabase } = useSupabase();
@@ -15,53 +19,30 @@ export default function AgeGatePage() {
   const [isChecking, setIsChecking] = useState(true);
   const hasRedirected = useRef(false);
 
-  // On mount, check if user already completed onboarding
   useEffect(() => {
     if (isAuthLoading || !user) return;
 
     async function checkExisting() {
-      if (!user || hasRedirected.current) return;
-      try {
-        const ageVerified = user.user_metadata?.age_verified === true;
+      if (hasRedirected.current || !user) return;
 
-        const { data: companions } = await supabase
-          .from("companions")
-          .select("id")
-          .eq("user_id", user.id)
-          .limit(1);
+      const ageVerified = user.user_metadata?.age_verified === true;
 
-        const hasCompanion = companions && companions.length > 0;
+      const { data: companions } = await supabase
+        .from("companions")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
 
-        if (ageVerified && hasCompanion) {
-          hasRedirected.current = true;
-          router.replace("/chat");
-          return;
-        }
+      const hasCompanion = companions && companions.length > 0;
 
-        if (ageVerified) {
-          router.replace("/upload");
-          return;
-        }
-
-        // Fallback: check DB for age_verified
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("age_verified")
-          .eq("id", user.id)
-          .single();
-
-        if (profile?.age_verified) {
-          await supabase.auth.updateUser({ data: { age_verified: true } });
-
-          hasRedirected.current = true;
-          router.replace(hasCompanion ? "/chat" : "/upload");
-          return;
-        }
-      } catch (err) {
-        console.error("Check existing error:", err);
-      } finally {
-        setIsChecking(false);
+      // Already verified → skip age gate
+      if (ageVerified) {
+        hasRedirected.current = true;
+        router.replace(hasCompanion ? "/chat" : "/upload");
+        return;
       }
+
+      setIsChecking(false);
     }
 
     checkExisting();
@@ -75,21 +56,19 @@ export default function AgeGatePage() {
     try {
       const birthDate = `${result.birthYear}-01-01`;
 
-      const { error } = await supabase
+      await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          id: user.id,
           age_verified: true,
           birth_date: birthDate,
-        })
-        .eq("id", user.id);
-
-      if (error) {
-        console.error("Age verification DB error:", error);
-        return;
-      }
+        }, { onConflict: "id" });
 
       await supabase.auth.updateUser({
-        data: { age_verified: true },
+        data: {
+          age_verified: true,
+          birth_year: result.birthYear,
+        },
       });
 
       sessionStorage.setItem("ageGroup", result.ageGroup);

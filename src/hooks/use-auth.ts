@@ -38,12 +38,16 @@ export function useAuth() {
    * Full name is stored in user_metadata for the auto-create profile trigger.
    */
   const signUp = useCallback(
-    async (email: string, password: string, fullName?: string) => {
+    async (email: string, password: string, fullName?: string, birthYear?: number) => {
       const result = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: fullName ?? "" },
+          data: {
+            full_name: fullName ?? "",
+            birth_year: birthYear ?? 0,
+            age_verified: birthYear ? new Date().getFullYear() - birthYear >= 18 : false,
+          },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
