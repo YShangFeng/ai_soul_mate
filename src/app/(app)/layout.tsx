@@ -1,19 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useCompanion } from "@/hooks/use-companion";
 import { Loader2 } from "lucide-react";
+import { useCompanion } from "@/hooks/use-companion";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const { companion, isLoading } = useCompanion();
-
-  useEffect(() => {
-    if (!isLoading && !companion) {
-      router.replace("/age-gate");
-    }
-  }, [isLoading, companion, router]);
 
   if (isLoading) {
     return (
@@ -23,7 +14,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!companion) return null;
-
+  // Allow access even without a companion — user can create one later
   return <>{children}</>;
 }

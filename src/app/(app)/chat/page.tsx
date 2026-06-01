@@ -11,13 +11,11 @@ import { ChatInput } from "@/components/chat/chat-input";
 import { WelcomeMessage } from "@/components/chat/welcome-message";
 import { QuotaIndicator } from "@/components/chat/quota-indicator";
 import { CompanionSwitcher } from "@/components/chat/companion-switcher";
+import { Button } from "@/components/ui/button";
 import type { Relationship } from "@/types/companion";
-import { Loader2 } from "lucide-react";
+import { Loader2, Heart, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
-/**
- * Chat Page — multi-companion chat with iMessage-style UI.
- * Companion selection via ?id=XXX URL param.
- */
 export default function ChatPage() {
   return (
     <Suspense
@@ -38,10 +36,7 @@ function ChatPageInner() {
   const { companions, isLoading: isCompanionsLoading } = useCompanions();
   const { used, limit, remaining, isPro, isLoading: isQuotaLoading } = useQuota();
 
-  // Get active companion from URL param, fallback to first companion
   const activeId = searchParams.get("id") ?? companions[0]?.id ?? "";
-
-  // Find the active companion object
   const companion = companions.find((c) => c.id === activeId) ?? null;
 
   // If companions loaded and active companion not found, redirect to first
@@ -51,14 +46,6 @@ function ChatPageInner() {
     }
   }, [isCompanionsLoading, companions, companion, router]);
 
-  // If no companions at all, redirect to upload
-  useEffect(() => {
-    if (!isCompanionsLoading && companions.length === 0) {
-      router.replace("/upload");
-    }
-  }, [isCompanionsLoading, companions, router]);
-
-  // Loading state
   if (isCompanionsLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -67,12 +54,27 @@ function ChatPageInner() {
     );
   }
 
-  // No companion yet
+  // No companions yet — show guided empty state
   if (companions.length === 0) {
-    return null; // Will redirect via useEffect
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-6 px-6 text-center">
+        <Heart className="h-16 w-16 text-brand-rose/30" />
+        <div>
+          <h2 className="text-xl font-semibold">No companion yet</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Upload a photo to create your first AI companion and start chatting.
+          </p>
+        </div>
+        <Button asChild size="lg" className="gap-2">
+          <Link href="/upload">
+            Create Your Companion
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
+    );
   }
 
-  // If no active companion set yet, show loading
   if (!companion) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -141,7 +143,6 @@ function ChatInterface({
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
-      {/* ── Fixed top section ── */}
       {companions.length > 1 && (
         <CompanionSwitcher companions={companions} activeId={activeId} />
       )}
@@ -157,7 +158,6 @@ function ChatInterface({
         <QuotaIndicator {...quota} />
       </div>
 
-      {/* ── Scrollable middle: messages ── */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {isFirstConversation ? (
           <WelcomeMessage
@@ -182,7 +182,6 @@ function ChatInterface({
         )}
       </div>
 
-      {/* ── Fixed bottom: input ── */}
       <ChatInput
         onSend={sendMessage}
         disabled={isStreaming}
