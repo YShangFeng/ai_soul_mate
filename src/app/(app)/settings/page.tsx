@@ -41,6 +41,8 @@ export default function SettingsPage() {
   }
 
   async function handleChangePassword() {
+    const email = user?.email;
+    if (!email) return;
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast({ title: "Missing fields", description: "Please fill in all password fields.", variant: "destructive" });
       return;
@@ -58,7 +60,7 @@ export default function SettingsPage() {
     try {
       // Verify current password by signing in, then update
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email!,
+        email,
         password: currentPassword,
       });
       if (signInError) {
