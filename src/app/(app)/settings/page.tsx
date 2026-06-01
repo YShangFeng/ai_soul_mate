@@ -1,19 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
+import { useSupabase } from "@/components/providers/supabase-provider";
 import { SubscriptionBadge } from "@/components/profile/subscription-badge";
 import { SubscriptionPanel } from "@/components/settings/subscription-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Mail, LogOut, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, LogOut, ArrowLeft, Key } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { supabase } = useSupabase();
   const { user, isLoading: isAuthLoading, signOut } = useAuth();
   const { plan, status, trialEndsAt } = useSubscription();
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   if (isAuthLoading || !user) {
     return (
@@ -28,6 +38,52 @@ export default function SettingsPage() {
   async function handleSignOut() {
     await signOut();
     router.replace("/");
+  }
+
+  async function handleChangePassword() {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast({ title: "Missing fields", description: "Please fill in all password fields.", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: "Password too short", description: "Must be at least 6 characters.", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Passwords don't match", description: "New password and confirmation must match.", variant: "destructive" });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      // Verify current password by signing in, then update
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password: currentPassword,
+      });
+      if (signInError) {
+        toast({ title: "Incorrect password", description: "Current password is wrong.", variant: "destructive" });
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (updateError) throw updateError;
+
+      toast({ title: "Password updated!", description: "Your password has been changed." });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      toast({
+        title: "Update failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
   }
 
   return (
@@ -58,6 +114,59 @@ export default function SettingsPage() {
               <span className="truncate">{user.email}</span>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Change Password */}
+      <Card className="border-border/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Key className="h-5 w-5 text-brand-purple" />
+            Change Password
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Current Password</Label>
+            <Input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Enter current password"
+              disabled={isChangingPassword}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New Password</Label>
+            <Input
+              id="new-password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              disabled={isChangingPassword}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Re-enter new password"
+              disabled={isChangingPassword}
+            />
+          </div>
+          <Button
+            onClick={handleChangePassword}
+            disabled={isChangingPassword}
+            className="w-full gap-2"
+          >
+            {isChangingPassword && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isChangingPassword ? "Updating..." : "Update Password"}
+          </Button>
         </CardContent>
       </Card>
 
