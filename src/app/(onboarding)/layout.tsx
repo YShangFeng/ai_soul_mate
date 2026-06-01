@@ -29,7 +29,7 @@ export default function OnboardingLayout({
           </Link>
 
           <Link
-            href="/"
+            href="/chat"
             className="flex items-center gap-1 rounded-full bg-white/5 px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
           >
             <X className="h-3 w-3" />
