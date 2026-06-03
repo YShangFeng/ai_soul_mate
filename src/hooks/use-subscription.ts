@@ -95,7 +95,7 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   }, []);
 
-  const rawPlan = subscription?.plan ?? "free";
+  const rawPlan = (subscription?.plan as string) ?? "free";
   // Normalize: legacy "pro" → "moon"
   const plan: "free" | "moon" | "starlight" =
     rawPlan === "starlight" ? "starlight" :
