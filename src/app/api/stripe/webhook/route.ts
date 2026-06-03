@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
           .update({
             stripe_subscription_id: subscriptionId,
             status: stripeSub.status === "trialing" ? "trialing" : "active",
-            plan: "pro",
+            plan: moon,
             trial_ends_at: stripeSub.trial_end
               ? new Date(stripeSub.trial_end * 1000).toISOString()
               : null,
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
             .from("subscriptions")
             .update({
               status,
-              plan: isActive ? "pro" : "free",
+              plan: isActive ? moon : "free",
               trial_ends_at: subscription.trial_end
                 ? new Date(subscription.trial_end * 1000).toISOString()
                 : null,
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
           .from("subscriptions")
           .update({
             status,
-            plan: isActive ? "pro" : "free",
+            plan: isActive ? moon : "free",
             trial_ends_at: subscription.trial_end
               ? new Date(subscription.trial_end * 1000).toISOString()
               : null,

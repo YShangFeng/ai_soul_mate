@@ -71,7 +71,7 @@ export type MessageUpdate = Partial<MessageInsert>;
 // --- Subscriptions ---
 export type SubscriptionStatus = "free" | "trialing" | "active" | "past_due" | "canceled";
 
-export type SubscriptionPlan = "free" | "pro";
+export type SubscriptionPlan = "free" | "moon" | "starlight";
 
 export interface SubscriptionRow {
   id: string;

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Crown, Sparkles } from "lucide-react";
 
 interface SubscriptionBadgeProps {
-  plan: "free" | "pro";
+  plan: "free" | "moon" | "starlight";
   status: string;
   trialEndsAt: string | null;
 }
@@ -14,11 +14,20 @@ export function SubscriptionBadge({
   status,
   trialEndsAt,
 }: SubscriptionBadgeProps) {
-  if (plan === "pro") {
+  if (plan === "starlight") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-rose-400 to-purple-400 px-2.5 py-0.5 text-xs font-semibold text-white">
+        <Sparkles className="h-3 w-3" />
+        Starlight
+      </span>
+    );
+  }
+
+  if (plan === "moon") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-300 px-2.5 py-0.5 text-xs font-semibold text-amber-950">
         <Crown className="h-3 w-3" />
-        Pro
+        Moon
       </span>
     );
   }
