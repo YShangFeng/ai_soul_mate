@@ -34,9 +34,12 @@ export async function POST(req: NextRequest) {
 
     const userId = event.data?.custom_data?.user_id as string | undefined;
     const subscriptionId = event.data?.id as string | undefined;
+    // Prefer explicit tier from customData, fallback to price ID detection
+    const customTier = event.data?.custom_data?.tier as string | undefined;
     const priceId = (event.data?.items?.[0]?.price?.id ?? "") as string;
     const starlightPriceId = process.env.NEXT_PUBLIC_PADDLE_STARLIGHT_PRICE_ID ?? "";
-    const plan = priceId && priceId === starlightPriceId ? "starlight" : "moon";
+    const plan: "moon" | "starlight" =
+      customTier === "starlight" || priceId === starlightPriceId ? "starlight" : "moon";
 
     console.log("[Paddle Webhook]", eventType, "userId:", userId, "plan:", plan);
 

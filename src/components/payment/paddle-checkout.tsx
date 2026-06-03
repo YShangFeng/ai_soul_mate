@@ -5,7 +5,7 @@ import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 
 let paddlePromise: Promise<Paddle | undefined> | null = null;
 
-function getPaddle(userId?: string, tier?: string) {
+function getPaddle() {
   if (!paddlePromise) {
     paddlePromise = initializePaddle({
       token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
@@ -14,14 +14,20 @@ function getPaddle(userId?: string, tier?: string) {
         settings: { displayMode: "overlay", theme: "dark" },
       },
       eventCallback: async (event) => {
-        if (event.name === "checkout.completed" && userId) {
-          const txId = event.data?.transaction_id ?? "";
-          await fetch("/api/paddle/complete", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, transactionId: txId, tier }),
-          });
-          window.location.href = "/profile?checkout=success";
+        if (event.name === "checkout.completed") {
+          // Read userId and tier from customData (not closure, safe for reuse)
+          const customData = event.data?.custom_data as { user_id?: string; tier?: string } | undefined;
+          const userId = customData?.user_id;
+          const tier = customData?.tier;
+          if (userId && tier) {
+            const txId = event.data?.transaction_id ?? "";
+            await fetch("/api/paddle/complete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId, transactionId: txId, tier }),
+            });
+            window.location.href = "/profile?checkout=success";
+          }
         }
       },
     });
@@ -49,11 +55,11 @@ export default function PaddleCheckoutButton({ tier, className, children, userId
     if (!priceId) return;
     setLoading(true);
     try {
-      const paddle = await getPaddle(userId, tier);
+      const paddle = await getPaddle();
       if (paddle) {
         paddle.Checkout.open({
           items: [{ priceId, quantity: 1 }],
-          customData: userId ? { user_id: userId } : undefined,
+          customData: userId ? { user_id: userId, tier } : undefined,
         });
       }
     } catch (err) {
