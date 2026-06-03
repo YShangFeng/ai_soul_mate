@@ -9,7 +9,6 @@ const APP_ROUTES = ["/chat", "/profile", "/settings", "/age-gate", "/upload", "/
 export function Footer() {
   const pathname = usePathname();
 
-  // Don't render on app pages
   if (APP_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
     return null;
   }
@@ -30,6 +29,9 @@ export function Footer() {
           </Link>
           <Link href="/terms" className="hover:text-foreground transition-colors">
             Terms of Service
+          </Link>
+          <Link href="/refund-policy" className="hover:text-foreground transition-colors">
+            Refund Policy
           </Link>
           <Link href="/contact" className="hover:text-foreground transition-colors">
             Contact
