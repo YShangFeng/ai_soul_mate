@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Refund Policy - SoulMate.ai",
-  description: "Our refund policy for SoulMate.ai one-time purchase plans.",
+  description: "Our refund policy for SoulMate.ai subscription plans.",
 };
 
 export default function RefundPolicyPage() {
@@ -19,13 +19,14 @@ export default function RefundPolicyPage() {
 
       <div className="prose prose-neutral dark:prose-invert max-w-none space-y-6">
         <section>
-          <h2 className="text-xl font-semibold">1. One-Time Purchases</h2>
+          <h2 className="text-xl font-semibold">1. Subscription Plans</h2>
           <p>
-            SoulMate.ai offers one-time purchase plans. When you buy Moon ($9.99) or
-            Starlight ($69.99), you gain access to the corresponding features for the
-            purchased duration. <strong>There are no recurring charges or automatic
-            renewals.</strong> Your access simply expires at the end of the plan period
-            unless you choose to purchase again.
+            SoulMate.ai offers subscription-based plans. The Moon plan is billed monthly
+            at $9.99/month, and the Starlight plan is billed annually at $69.99/year.
+            <strong> Subscriptions automatically renew </strong> at the end of each billing
+            period unless canceled. You may cancel your subscription at any time from your
+            account settings, and your access will continue until the end of the current
+            billing period.
           </p>
         </section>
 
@@ -50,7 +51,17 @@ export default function RefundPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">4. How to Request a Refund</h2>
+          <h2 className="text-xl font-semibold">4. Subscription Cancellation</h2>
+          <p>
+            You can cancel your subscription at any time from your account settings.
+            Upon cancellation, your subscription will remain active until the end of
+            the current billing period, after which it will not renew. No partial
+            refunds are provided for unused time within a billing period.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-semibold">5. How to Request a Refund</h2>
           <p>To request a refund, email us at:</p>
           <p className="font-medium">
             <a href="mailto:support@soulmate.ai" className="text-brand-purple hover:underline">
@@ -68,7 +79,7 @@ export default function RefundPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">5. Refund Processing</h2>
+          <h2 className="text-xl font-semibold">6. Refund Processing</h2>
           <p>
             Approved refunds will be credited to the original payment method. Depending on
             your bank or card issuer, it may take 5-10 business days for the refund to appear
@@ -77,7 +88,7 @@ export default function RefundPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">6. Changes to This Policy</h2>
+          <h2 className="text-xl font-semibold">7. Changes to This Policy</h2>
           <p>
             We reserve the right to update this Refund Policy at any time. Changes will be
             posted on this page with an updated revision date. Continued use of our services
@@ -86,7 +97,7 @@ export default function RefundPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">7. Contact</h2>
+          <h2 className="text-xl font-semibold">8. Contact</h2>
           <p>
             If you have any questions about this Refund Policy, please contact us at{" "}
             <a href="mailto:support@soulmate.ai" className="text-brand-purple hover:underline">
