@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Heart, Users, GraduationCap, Star, Loader2, Lock } from "lucide-react";
+import { ArrowRight, Heart, Users, GraduationCap, Star, Loader2, Lock, Shuffle } from "lucide-react";
 import type { Relationship } from "@/types/companion";
 import { RELATIONSHIP_LABELS } from "@/types/companion";
 
@@ -50,6 +50,30 @@ const RELATIONSHIPS: RelationOption[] = [
     description: "A character from your imagination",
   },
 ];
+
+// ============================================
+// Random Name Generator
+// ============================================
+
+const RANDOM_NAMES = [
+  // Warm & cozy
+  "Luna", "Kai", "Aria", "Leo", "Nova", "Zara", "Ezra", "Iris",
+  "Milo", "Eden", "Finn", "Lyra", "Juno", "Atlas", "Rory", "Cleo",
+  "Theo", "Vera", "Orion", "Sage", "Ciel", "Mira", "Eli", "Nia",
+  "Ash", "Lumi", "Koa", "Rune", "Zephyr", "Sol",
+  // Romantic
+  "Amara", "Dante", "Celeste", "Valentine", "Seraphina", "Rose",
+  // Mystical
+  "Shadow", "Ember", "Storm", "Frost", "Willow", "Onyx",
+  // Eastern-inspired
+  "Mei", "Ren", "Sora", "Hana", "Yuki", "Riku",
+  // Fantasy
+  "Aeris", "Thorne", "Elowen", "Dorian", "Faye", "Caspian",
+];
+
+function generateRandomName(): string {
+  return RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)]!;
+}
 
 // ============================================
 // Component
@@ -117,20 +141,33 @@ export function NameRelationshipForm({
       {/* Name input */}
       <div className="space-y-2">
         <Label htmlFor="companion-name">What&apos;s their name?</Label>
-        <Input
-          id="companion-name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Luna, Kai, Aria..."
-          maxLength={20}
-          disabled={isSubmitting}
-          autoFocus
-          required
-          className="text-center text-lg"
-        />
+        <div className="flex gap-2">
+          <Input
+            id="companion-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Luna, Kai, Aria..."
+            maxLength={20}
+            disabled={isSubmitting}
+            autoFocus
+            required
+            className="text-center text-lg flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-12 w-12 shrink-0"
+            onClick={() => setName(generateRandomName())}
+            disabled={isSubmitting}
+            title="Random name"
+          >
+            <Shuffle className="h-5 w-5 text-brand-purple" />
+          </Button>
+        </div>
         <p className="text-xs text-muted-foreground text-center">
-          2–20 characters. Emojis welcome ✨
+          2–20 characters. Click the ⟳ icon for a random name ✨
         </p>
       </div>
 
