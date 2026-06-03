@@ -26,7 +26,7 @@ function getPaddle() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ userId, transactionId: txId, tier }),
             });
-            window.location.href = "/settings?checkout=success";
+            window.location.reload();
           }
         }
       },
