@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * Paddle Webhook — handles transaction.completed for one-time purchases.
- * Webhook URL: https://aisoulmate.chat/api/paddle/webhook
- */
 export const runtime = "nodejs";
 
 const WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET ?? "";
@@ -14,19 +10,27 @@ export async function POST(req: NextRequest) {
     const body = await req.text();
     const signature = req.headers.get("paddle-signature") ?? "";
 
+    console.log("[Paddle Webhook] signature header:", signature.slice(0, 80));
+
     if (WEBHOOK_SECRET && signature) {
+      const parts = signature.split(";");
+      const ts = parts.find((p) => p.startsWith("ts="))?.slice(3) ?? "";
+      const actualSig = parts.find((p) => p.startsWith("h1="))?.slice(3);
+
       const crypto = await import("crypto");
       const hmac = crypto.createHmac("sha256", WEBHOOK_SECRET);
-      hmac.update(body);
+      hmac.update(`${ts}:${body}`);
       const expected = hmac.digest("hex");
-      const parts = signature.split(";");
-      const actualSig = parts.find((p) => p.startsWith("h1="))?.slice(3);
+
+      console.log("[Paddle Webhook] ts:", ts, "expected:", expected.slice(0, 20), "actual:", actualSig?.slice(0, 20));
+
       if (!actualSig || expected !== actualSig) {
         return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
       }
     }
 
     const event = JSON.parse(body);
+    console.log("[Paddle Webhook] event_type:", event.event_type);
 
     if (event.event_type !== "transaction.completed") {
       return NextResponse.json({ received: true });
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No user_id" }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     await supabase.from("subscriptions").upsert(
       {
