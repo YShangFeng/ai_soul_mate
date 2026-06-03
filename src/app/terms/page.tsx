@@ -45,8 +45,8 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">5. Subscriptions & Billing</h2>
-          <p>Paid subscriptions renew automatically unless cancelled. See our <Link href="/refund-policy" className="text-brand-purple hover:underline">Refund Policy</Link> for refund terms.</p>
+          <h2 className="text-xl font-semibold">5. Purchases & Billing</h2>
+          <p>All plans are one-time purchases. There are no recurring charges or automatic renewals. See our <Link href="/refund-policy" className="text-brand-purple hover:underline">Refund Policy</Link> for refund terms.</p>
         </section>
 
         <section>

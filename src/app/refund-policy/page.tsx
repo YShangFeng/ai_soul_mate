@@ -4,32 +4,28 @@ import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Refund Policy - SoulMate.ai",
-  description: "Our refund policy for SoulMate.ai subscription services.",
+  description: "Our refund policy for SoulMate.ai one-time purchase plans.",
 };
 
 export default function RefundPolicyPage() {
   return (
     <div className="mx-auto max-w-3xl px-6 pb-16 pt-8">
-      <Link
-        href="/"
-        className="mb-8 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Home
+      <Link href="/" className="mb-8 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <ArrowLeft className="h-4 w-4" /> Back to Home
       </Link>
 
       <h1 className="mb-2 text-3xl font-bold tracking-tight">Refund Policy</h1>
-      <p className="mb-8 text-sm text-muted-foreground">
-        Last updated: June 3, 2026
-      </p>
+      <p className="mb-8 text-sm text-muted-foreground">Last updated: June 3, 2026</p>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none space-y-6">
         <section>
-          <h2 className="text-xl font-semibold">1. Subscription Services</h2>
+          <h2 className="text-xl font-semibold">1. One-Time Purchases</h2>
           <p>
-            SoulMate.ai offers subscription-based services with the following plans:
-            Free, Moon ($9.99/month), and Starlight ($69.99/year). By subscribing,
-            you agree to the billing terms presented at the time of purchase.
+            SoulMate.ai offers one-time purchase plans. When you buy Moon ($9.99) or
+            Starlight ($69.99), you gain access to the corresponding features for the
+            purchased duration. <strong>There are no recurring charges or automatic
+            renewals.</strong> Your access simply expires at the end of the plan period
+            unless you choose to purchase again.
           </p>
         </section>
 
@@ -47,7 +43,7 @@ export default function RefundPolicyPage() {
           <p>Refunds will not be issued in the following circumstances:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li>More than 24 hours have passed since your purchase.</li>
-            <li>You have used VIP-exclusive features during the current billing period.</li>
+            <li>You have used VIP-exclusive features after purchase.</li>
             <li>Violation of our Terms of Service.</li>
             <li>Chargebacks or disputes filed without first contacting us.</li>
           </ul>
@@ -57,17 +53,14 @@ export default function RefundPolicyPage() {
           <h2 className="text-xl font-semibold">4. How to Request a Refund</h2>
           <p>To request a refund, email us at:</p>
           <p className="font-medium">
-            <a
-              href="mailto:support@soulmate.ai"
-              className="text-brand-purple hover:underline"
-            >
+            <a href="mailto:support@soulmate.ai" className="text-brand-purple hover:underline">
               support@soulmate.ai
             </a>
           </p>
           <p>Please include:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li>The email address associated with your account</li>
-            <li>The subscription plan you purchased</li>
+            <li>The plan you purchased</li>
             <li>The date and amount of the charge</li>
             <li>A brief reason for your refund request</li>
           </ul>
@@ -96,10 +89,7 @@ export default function RefundPolicyPage() {
           <h2 className="text-xl font-semibold">7. Contact</h2>
           <p>
             If you have any questions about this Refund Policy, please contact us at{" "}
-            <a
-              href="mailto:support@soulmate.ai"
-              className="text-brand-purple hover:underline"
-            >
+            <a href="mailto:support@soulmate.ai" className="text-brand-purple hover:underline">
               support@soulmate.ai
             </a>
             .
