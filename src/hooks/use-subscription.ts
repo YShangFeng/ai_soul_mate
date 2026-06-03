@@ -17,7 +17,7 @@ interface UseSubscriptionReturn {
   isLoading: boolean;
   trialEndsAt: string | null;
   isTrialing: boolean;
-  upgrade: (plan?: "moon" | "starlight") => Promise<void>;
+  upgrade: () => Promise<void>;
   manage: () => Promise<void>;
 }
 
@@ -61,36 +61,9 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscription();
   }, [fetchSubscription]);
 
-  /** Redirect to Paddle Checkout */
-  const upgrade = useCallback(async (planType: "moon" | "starlight" = "moon") => {
-    try {
-      const res = await fetch("/api/paddle/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planType }),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok || json.error) {
-        toast({
-          title: "Checkout failed",
-          description: json.error?.message ?? "Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (json.data?.url) {
-        window.location.href = json.data.url;
-      }
-    } catch {
-      toast({
-        title: "Network error",
-        description: "Please check your connection and try again.",
-        variant: "destructive",
-      });
-    }
+  /** Navigate to pricing page */
+  const upgrade = useCallback(async () => {
+    window.location.href = "/pricing";
   }, []);
 
   /** Redirect to Stripe Customer Portal */
