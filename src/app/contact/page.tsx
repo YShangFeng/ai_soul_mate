@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Mail, MessageCircle } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact - SoulMate.ai",
@@ -19,30 +19,16 @@ export default function ContactPage() {
         Have questions, feedback, or need help? We&apos;d love to hear from you.
       </p>
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div className="rounded-xl border border-border/40 bg-card/60 p-6 backdrop-blur-sm">
-          <Mail className="mb-3 h-8 w-8 text-brand-purple" />
-          <h2 className="mb-1 text-lg font-semibold">Email Support</h2>
-          <p className="mb-3 text-sm text-muted-foreground">
-            For account, billing, or technical issues
-          </p>
-          <a href="mailto:support@soulmate.ai" className="text-brand-purple hover:underline font-medium">
-            support@soulmate.ai
-          </a>
-          <p className="mt-2 text-xs text-muted-foreground">Response within 24 hours</p>
-        </div>
-
-        <div className="rounded-xl border border-border/40 bg-card/60 p-6 backdrop-blur-sm">
-          <MessageCircle className="mb-3 h-8 w-8 text-brand-purple" />
-          <h2 className="mb-1 text-lg font-semibold">Business Inquiries</h2>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Partnerships, press, and commercial
-          </p>
-          <a href="mailto:hello@soulmate.ai" className="text-brand-purple hover:underline font-medium">
-            hello@soulmate.ai
-          </a>
-          <p className="mt-2 text-xs text-muted-foreground">Response within 2 business days</p>
-        </div>
+      <div className="rounded-xl border border-border/40 bg-card/60 p-6 backdrop-blur-sm max-w-sm">
+        <Mail className="mb-3 h-8 w-8 text-brand-purple" />
+        <h2 className="mb-1 text-lg font-semibold">Email Support</h2>
+        <p className="mb-3 text-sm text-muted-foreground">
+          For account, billing, or any questions
+        </p>
+        <a href="mailto:support@soulmate.ai" className="text-brand-purple hover:underline font-medium">
+          support@soulmate.ai
+        </a>
+        <p className="mt-2 text-xs text-muted-foreground">Response within 24 hours</p>
       </div>
     </div>
   );
