@@ -5,15 +5,15 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useSupabase } from "@/components/providers/supabase-provider";
 import { SubscriptionBadge } from "@/components/profile/subscription-badge";
-import { SubscriptionPanel } from "@/components/settings/subscription-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Mail, LogOut, ArrowLeft, Key } from "lucide-react";
+import { Loader2, Mail, LogOut, ArrowLeft, Key, Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -172,8 +172,32 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Subscription Info */}
-      <SubscriptionPanel />
+      {/* Plan Status */}
+      <Card className="border-border/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Crown className="h-5 w-5" />
+            Current Plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-lg font-bold capitalize">{plan}</span>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {plan === "free"
+                  ? "10 messages/day · 1 companion"
+                  : "Unlimited messages · Up to 5 companions"}
+              </p>
+            </div>
+            {plan === "free" && (
+              <Button asChild size="sm">
+                <Link href="/pricing">Upgrade</Link>
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Logout */}
       <Button
