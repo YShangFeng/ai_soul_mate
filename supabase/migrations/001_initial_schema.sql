@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   stripe_customer_id    TEXT,
   stripe_subscription_id TEXT,
   status                TEXT NOT NULL DEFAULT 'free' CHECK (status IN ('free', 'trialing', 'active', 'past_due', 'canceled')),
-  plan                  TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro')),
+  plan                  TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'moon', 'starlight')),
   trial_ends_at         TIMESTAMPTZ,
   current_period_end    TIMESTAMPTZ,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
