@@ -95,7 +95,11 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   }, []);
 
-  const plan = (subscription?.plan as "free" | "moon" | "starlight") ?? "free";
+  const rawPlan = subscription?.plan ?? "free";
+  // Normalize: legacy "pro" → "moon"
+  const plan: "free" | "moon" | "starlight" =
+    rawPlan === "starlight" ? "starlight" :
+    rawPlan === "moon" || rawPlan === "pro" ? "moon" : "free";
   const status = subscription?.status ?? "active";
   const isTrialing = status === "trialing";
 

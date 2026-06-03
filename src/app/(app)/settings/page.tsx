@@ -183,11 +183,13 @@ export default function SettingsPage() {
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-lg font-bold capitalize">{plan}</span>
+              <span className="text-lg font-bold capitalize">{plan === "moon" ? "Moon" : plan === "starlight" ? "Starlight" : "Free"}</span>
               <p className="mt-1 text-sm text-muted-foreground">
                 {plan === "free"
                   ? "10 messages/day · 1 companion"
-                  : "Unlimited messages · Up to 5 companions"}
+                  : plan === "moon"
+                  ? "Unlimited messages · Up to 5 companions"
+                  : "Unlimited messages · Up to 10 companions"}
               </p>
             </div>
             {plan === "free" && (
