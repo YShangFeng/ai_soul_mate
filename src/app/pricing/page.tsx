@@ -72,14 +72,14 @@ function PlanCard({
   features: string[]; cta: string;
   href?: string; featured?: boolean; savedLabel?: string;
   isPaid?: boolean; isLoggedIn?: boolean;
-  onUpgrade?: () => Promise<void>; signupHref?: string;
+  onUpgrade?: (plan: "moon" | "starlight") => Promise<void>; signupHref?: string;
 }) {
   const [loading, setLoading] = useState(false);
 
   async function handlePaidClick() {
     if (isLoggedIn && onUpgrade) {
       setLoading(true);
-      await onUpgrade();
+      await onUpgrade(name.toLowerCase() === "moon" ? "moon" : "starlight");
       setLoading(false);
     }
   }

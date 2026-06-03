@@ -17,7 +17,7 @@ interface UseSubscriptionReturn {
   isLoading: boolean;
   trialEndsAt: string | null;
   isTrialing: boolean;
-  upgrade: () => Promise<void>;
+  upgrade: (plan?: "moon" | "starlight") => Promise<void>;
   manage: () => Promise<void>;
 }
 
@@ -61,12 +61,13 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscription();
   }, [fetchSubscription]);
 
-  /** Redirect to Stripe Checkout */
-  const upgrade = useCallback(async () => {
+  /** Redirect to Paddle Checkout */
+  const upgrade = useCallback(async (planType: "moon" | "starlight" = "moon") => {
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch("/api/paddle/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planType }),
       });
 
       const json = await res.json();
