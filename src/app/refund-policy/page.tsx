@@ -35,30 +35,21 @@ export default function RefundPolicyPage() {
 
         <section>
           <h2 className="text-xl font-semibold">2. Refund Eligibility</h2>
-          <ul className="list-disc pl-6 space-y-2">
-            <li>
-              <strong>Monthly subscriptions (Moon):</strong> You may request a full refund
-              within 48 hours of your initial purchase or any renewal charge.
-            </li>
-            <li>
-              <strong>Annual subscriptions (Starlight):</strong> You may request a full
-              refund within 7 days of your initial purchase or annual renewal.
-            </li>
-            <li>
-              <strong>Free Trial:</strong> If you cancel before the trial ends, you will
-              not be charged. No refund applies as no payment was collected.
-            </li>
-          </ul>
+          <p>
+            You may request a full refund within <strong>24 hours</strong> of your purchase,
+            provided that you have <strong>not used any VIP features</strong> (unlimited
+            messages, premium avatar generation, etc.) during that period.
+          </p>
         </section>
 
         <section>
           <h2 className="text-xl font-semibold">3. Non-Refundable Cases</h2>
           <p>Refunds will not be issued in the following circumstances:</p>
           <ul className="list-disc pl-6 space-y-2">
-            <li>Requests submitted after the refund window has expired.</li>
-            <li>Violation of our Terms of Service or Acceptable Use Policy.</li>
-            <li>Chargebacks or disputes filed with your payment provider without first contacting us.</li>
-            <li>Partial months or unused portions of a subscription period.</li>
+            <li>More than 24 hours have passed since your purchase.</li>
+            <li>You have used VIP-exclusive features during the current billing period.</li>
+            <li>Violation of our Terms of Service.</li>
+            <li>Chargebacks or disputes filed without first contacting us.</li>
           </ul>
         </section>
 
