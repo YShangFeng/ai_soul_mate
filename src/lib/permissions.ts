@@ -32,7 +32,7 @@ export const LIMITS = {
   PRO: {
     chatMessagesPerDay: Number.POSITIVE_INFINITY,
     avatarGenerationsPerDay: Number.POSITIVE_INFINITY,
-    maxCompanions: 5,
+    maxCompanions: 10,
   },
 } as const;
 

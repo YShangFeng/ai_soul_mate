@@ -4,11 +4,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Star } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useSubscription } from "@/hooks/use-subscription";
 import PaddleCheckoutButton from "@/components/payment/paddle-checkout";
 
 export default function PricingPage() {
   const { user } = useAuth();
+  const { plan } = useSubscription();
   const isLoggedIn = !!user;
+  const isPro = plan === "pro";
 
   return (
     <div className="mx-auto max-w-6xl px-6 pb-16 pt-8">
@@ -46,9 +49,13 @@ export default function PricingPage() {
             <p className="mt-3 text-sm text-muted-foreground">Deeper connections, unlimited conversations</p>
           </div>
           <ul className="mb-8 flex-1 space-y-3">
-            {["2 AI companions", "Unlimited messages", "Priority avatar generation", "Enhanced response quality", "Custom relationship types"].map((f) => <li key={f} className="flex items-start gap-2 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-purple" />{f}</li>)}
+            {["5 AI companions", "Unlimited messages", "Priority avatar generation", "Enhanced response quality", "Custom relationship types"].map((f) => <li key={f} className="flex items-start gap-2 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-purple" />{f}</li>)}
           </ul>
-          {isLoggedIn ? (
+          {isPro ? (
+            <span className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-10 w-full px-4 py-2 bg-brand-purple/15 text-brand-purple border border-brand-purple/30 cursor-default">
+              Current Plan
+            </span>
+          ) : isLoggedIn ? (
             <PaddleCheckoutButton tier="moon" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-full px-4 py-2" userId={user?.id}>
               Upgrade Now
             </PaddleCheckoutButton>
@@ -68,7 +75,7 @@ export default function PricingPage() {
             <p className="mt-3 text-sm text-muted-foreground">The ultimate AI companion experience</p>
           </div>
           <ul className="mb-8 flex-1 space-y-3">
-            {["5 AI companions", "Unlimited messages", "Ultra-quality avatar generation", "Premium response quality", "All relationship types", "Priority support"].map((f) => <li key={f} className="flex items-start gap-2 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-purple" />{f}</li>)}
+            {["10 AI companions", "Unlimited messages", "Ultra-quality avatar generation", "Premium response quality", "All relationship types", "Priority support"].map((f) => <li key={f} className="flex items-start gap-2 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-purple" />{f}</li>)}
           </ul>
           {isLoggedIn ? (
             <PaddleCheckoutButton tier="starlight" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 w-full px-4 py-2" userId={user?.id}>
