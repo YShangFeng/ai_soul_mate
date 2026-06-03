@@ -21,7 +21,6 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         plan: "pro",
         status: "active",
-        paddle_transaction_id: transactionId ?? "",
         updated_at: new Date().toISOString(),
       } as never,
       { onConflict: "user_id" }

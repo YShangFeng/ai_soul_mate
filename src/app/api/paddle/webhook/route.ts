@@ -55,7 +55,6 @@ export async function POST(req: NextRequest) {
       await supabase.from("subscriptions").update({
         plan: "pro",
         status: "active",
-        paddle_sub_id: subscriptionId,
         updated_at: new Date().toISOString(),
       } as never).eq("user_id", userId);
     } else {
@@ -63,7 +62,6 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         plan: "pro",
         status: "active",
-        paddle_sub_id: subscriptionId,
         updated_at: new Date().toISOString(),
       } as never);
     }
