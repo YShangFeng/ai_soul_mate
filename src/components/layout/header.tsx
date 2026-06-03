@@ -15,7 +15,6 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isLoggedIn = !!user && !isAuthLoading;
 
-  // Don't render on app pages
   if (APP_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
     return null;
   }
@@ -23,7 +22,6 @@ export function Header() {
   return (
     <header className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-2 text-lg font-bold">
           <Heart className="h-5 w-5 fill-brand-rose text-brand-rose" />
           <span>
@@ -31,8 +29,13 @@ export function Header() {
           </span>
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden items-center gap-6 md:flex">
+          <Link
+            href="/pricing"
+            className="text-sm text-muted-foreground transition hover:text-foreground"
+          >
+            Pricing
+          </Link>
           {isLoggedIn ? (
             <Link
               href="/settings"
@@ -55,7 +58,6 @@ export function Header() {
           )}
         </nav>
 
-        {/* Mobile */}
         <button
           className="md:hidden"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -68,10 +70,9 @@ export function Header() {
       {isMenuOpen && (
         <nav className="border-t border-border/30 bg-background/95 backdrop-blur-md md:hidden">
           <div className="flex flex-col p-4">
+            <MobileLink href="/pricing" label="Pricing" onClick={() => setIsMenuOpen(false)} />
             {isLoggedIn ? (
-              <>
-                <MobileLink href="/settings" label="Settings" onClick={() => setIsMenuOpen(false)} />
-              </>
+              <MobileLink href="/settings" label="Settings" onClick={() => setIsMenuOpen(false)} />
             ) : (
               <>
                 <MobileLink href="/login" label="Log In" onClick={() => setIsMenuOpen(false)} />
