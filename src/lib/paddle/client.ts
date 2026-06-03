@@ -3,8 +3,8 @@ const PADDLE_SANDBOX = "https://sandbox-api.paddle.com";
 const PADDLE_LIVE = "https://api.paddle.com";
 
 function getPaddleConfig() {
-  const apiKey = process.env.PADDLE_API_KEY;
-  const isLive = process.env.PADDLE_ENVIRONMENT === "live";
+  const apiKey = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+  const isLive = process.env.NEXT_PUBLIC_PADDLE_ENV === "live";
   return {
     apiKey,
     baseUrl: isLive ? PADDLE_LIVE : PADDLE_SANDBOX,

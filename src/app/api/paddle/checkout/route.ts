@@ -3,12 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createPaddleCheckout } from "@/lib/paddle/client";
 
 const PRICE_IDS: Record<string, string> = {
-  moon: process.env.PADDLE_MOON_PRICE_ID ?? "",
-  starlight: process.env.PADDLE_STARLIGHT_PRICE_ID ?? "",
+  moon: process.env.NEXT_PUBLIC_PADDLE_MOON_PRICE_ID ?? "",
+  starlight: process.env.NEXT_PUBLIC_PADDLE_STARLIGHT_PRICE_ID ?? "",
 };
 
 export async function POST(request: NextRequest) {
-  if (!process.env.PADDLE_API_KEY) {
+  if (!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
     return NextResponse.json(
       { error: { code: "NOT_CONFIGURED", message: "Payment is not available yet. Check back soon!" } },
       { status: 503 },
