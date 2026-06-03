@@ -11,9 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Mail, LogOut, ArrowLeft, Key, Crown } from "lucide-react";
+import { Loader2, Mail, LogOut, ArrowLeft, Key } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -169,35 +168,6 @@ export default function SettingsPage() {
             {isChangingPassword && <Loader2 className="h-4 w-4 animate-spin" />}
             {isChangingPassword ? "Updating..." : "Update Password"}
           </Button>
-        </CardContent>
-      </Card>
-
-      {/* Plan Status */}
-      <Card className="border-border/40">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Crown className="h-5 w-5" />
-            Current Plan
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-lg font-bold capitalize">{plan === "moon" ? "Moon" : plan === "starlight" ? "Starlight" : "Free"}</span>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {plan === "free"
-                  ? "10 messages/day · 1 companion"
-                  : plan === "moon"
-                  ? "Unlimited messages · Up to 5 companions"
-                  : "Unlimited messages · Up to 10 companions"}
-              </p>
-            </div>
-            {plan === "free" && (
-              <Button asChild size="sm">
-                <Link href="/pricing">Upgrade</Link>
-              </Button>
-            )}
-          </div>
         </CardContent>
       </Card>
 
