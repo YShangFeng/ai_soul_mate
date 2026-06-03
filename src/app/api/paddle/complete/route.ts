@@ -7,19 +7,22 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function POST(request: NextRequest) {
   try {
-    const { userId, transactionId } = await request.json();
+    const { userId, transactionId, tier } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: "Missing userId" }, { status: 400 });
     }
 
+    // Validate tier: moon or starlight (default to moon for safety)
+    const plan = tier === "starlight" ? "starlight" : "moon";
+
     const supabase = createAdminClient();
 
-    // Upsert subscription record - activate pro
+    // Upsert subscription record
     const { error } = await supabase.from("subscriptions").upsert(
       {
         user_id: userId,
-        plan: "pro",
+        plan,
         status: "active",
         updated_at: new Date().toISOString(),
       } as never,
@@ -31,6 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to update subscription" }, { status: 500 });
     }
 
+    console.log(`[Paddle Complete] Activated ${plan} for user ${userId}`);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Paddle complete error:", err);

@@ -16,7 +16,7 @@
 // ============================================
 // 🔧 主开关：支付系统是否启用
 //    false → 所有用户享受 PRO 权限
-//    true  → 根据 subscriptions 表区分 free/pro
+//    true  → 根据 subscriptions 表区分 free/moon/starlight
 // ============================================
 const PAYMENT_ENABLED = true;
 
@@ -29,7 +29,12 @@ export const LIMITS = {
     avatarGenerationsPerDay: 3,
     maxCompanions: 2,
   },
-  PRO: {
+  MOON: {
+    chatMessagesPerDay: Number.POSITIVE_INFINITY,
+    avatarGenerationsPerDay: Number.POSITIVE_INFINITY,
+    maxCompanions: 5,
+  },
+  STARLIGHT: {
     chatMessagesPerDay: Number.POSITIVE_INFINITY,
     avatarGenerationsPerDay: Number.POSITIVE_INFINITY,
     maxCompanions: 10,
@@ -62,11 +67,19 @@ type SupabaseClient = any;
 // ============================================
 // 内部：判断用户等级（接收 supabase client）
 // ============================================
+type Tier = "free" | "moon" | "starlight";
+
+const UPPER_MAP: Record<Tier, keyof typeof LIMITS> = {
+  free: "FREE",
+  moon: "MOON",
+  starlight: "STARLIGHT",
+};
+
 async function getUserTier(
   supabase: SupabaseClient,
   userId: string,
-): Promise<"pro" | "free"> {
-  if (!PAYMENT_ENABLED) return "pro";
+): Promise<Tier> {
+  if (!PAYMENT_ENABLED) return "moon";
 
   const { data } = await supabase
     .from("subscriptions")
@@ -74,7 +87,10 @@ async function getUserTier(
     .eq("user_id", userId)
     .single();
 
-  return (data as { plan?: string } | null)?.plan === "pro" ? "pro" : "free";
+  const plan = (data as { plan?: string } | null)?.plan;
+  if (plan === "starlight") return "starlight";
+  if (plan === "moon" || plan === "pro") return "moon"; // backwards-compat: legacy "pro" = moon
+  return "free";
 }
 
 // ============================================
@@ -85,7 +101,7 @@ export async function checkChatQuota(
   supabase: SupabaseClient,
 ): Promise<FeatureCheck> {
   const tier = await getUserTier(supabase, userId);
-  const limit = LIMITS[tier === "pro" ? "PRO" : "FREE"].chatMessagesPerDay;
+  const limit = LIMITS[UPPER_MAP[tier]].chatMessagesPerDay;
 
   if (limit === Number.POSITIVE_INFINITY) {
     return { allowed: true, limit: Number.POSITIVE_INFINITY, used: 0, remaining: Number.POSITIVE_INFINITY };
@@ -119,7 +135,7 @@ export async function checkCompanionLimit(
   supabase: SupabaseClient,
 ): Promise<FeatureCheck> {
   const tier = await getUserTier(supabase, userId);
-  const maxCompanions = LIMITS[tier === "pro" ? "PRO" : "FREE"].maxCompanions;
+  const maxCompanions = LIMITS[UPPER_MAP[tier]].maxCompanions;
 
   const result = await supabase
     .from("companions")
@@ -145,7 +161,7 @@ export async function checkAvatarQuota(
   supabase: SupabaseClient,
 ): Promise<FeatureCheck> {
   const tier = await getUserTier(supabase, userId);
-  const limit = LIMITS[tier === "pro" ? "PRO" : "FREE"].avatarGenerationsPerDay;
+  const limit = LIMITS[UPPER_MAP[tier]].avatarGenerationsPerDay;
 
   if (limit === Number.POSITIVE_INFINITY) {
     return { allowed: true, limit: Number.POSITIVE_INFINITY, used: 0, remaining: Number.POSITIVE_INFINITY };
@@ -177,7 +193,7 @@ export async function getQuotaState(
   userId: string,
 ): Promise<QuotaState> {
   const tier = await getUserTier(supabase, userId);
-  const isPro = tier === "pro";
+  const isPro = tier !== "free";
 
   if (isPro) {
     return { used: 0, limit: Number.POSITIVE_INFINITY, remaining: Number.POSITIVE_INFINITY, isPro: true, isLoading: false };

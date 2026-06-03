@@ -4,7 +4,7 @@
 
 export type SubscriptionStatus = "free" | "trialing" | "active" | "past_due" | "canceled";
 
-export type SubscriptionPlan = "free" | "pro";
+export type SubscriptionPlan = "free" | "moon" | "starlight";
 
 /** Full subscription entity */
 export interface Subscription {

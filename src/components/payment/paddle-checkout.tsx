@@ -5,7 +5,7 @@ import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 
 let paddlePromise: Promise<Paddle | undefined> | null = null;
 
-function getPaddle(userId?: string) {
+function getPaddle(userId?: string, tier?: string) {
   if (!paddlePromise) {
     paddlePromise = initializePaddle({
       token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
@@ -19,7 +19,7 @@ function getPaddle(userId?: string) {
           await fetch("/api/paddle/complete", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, transactionId: txId }),
+            body: JSON.stringify({ userId, transactionId: txId, tier }),
           });
           window.location.href = "/profile?checkout=success";
         }
@@ -49,7 +49,7 @@ export default function PaddleCheckoutButton({ tier, className, children, userId
     if (!priceId) return;
     setLoading(true);
     try {
-      const paddle = await getPaddle(userId);
+      const paddle = await getPaddle(userId, tier);
       if (paddle) {
         paddle.Checkout.open({
           items: [{ priceId, quantity: 1 }],

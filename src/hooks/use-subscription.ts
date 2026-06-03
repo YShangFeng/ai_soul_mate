@@ -11,7 +11,7 @@ import { toast } from "@/components/ui/toast";
 // ============================================
 
 interface UseSubscriptionReturn {
-  plan: "free" | "pro";
+  plan: "free" | "moon" | "starlight";
   status: SubscriptionStatus;
   subscription: Subscription | null;
   isLoading: boolean;
@@ -95,7 +95,7 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   }, []);
 
-  const plan = subscription?.plan ?? "free";
+  const plan = (subscription?.plan as "free" | "moon" | "starlight") ?? "free";
   const status = subscription?.status ?? "active";
   const isTrialing = status === "trialing";
 
