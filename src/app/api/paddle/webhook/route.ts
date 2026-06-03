@@ -30,15 +30,22 @@ export async function POST(req: NextRequest) {
     }
 
     const event = JSON.parse(body);
-    console.log("[Paddle Webhook] event_type:", event.event_type);
+    console.log("[Paddle Webhook] Full event:", JSON.stringify(event).slice(0, 500));
 
     if (event.event_type !== "transaction.completed") {
+      console.log("[Paddle Webhook] Skipping non-transaction event:", event.event_type);
       return NextResponse.json({ received: true });
     }
 
     const transactionId = event.data?.id;
-    const customData = event.data?.custom_data ?? {};
+    // custom_data may be at different paths depending on event type
+    const customData =
+      event.data?.custom_data ??
+      event.data?.transaction?.custom_data ??
+      {};
     const userId = customData.user_id as string | undefined;
+
+    console.log("[Paddle Webhook] customData:", JSON.stringify(customData), "userId:", userId);
 
     if (!userId) {
       console.error("[Paddle Webhook] No user_id in custom_data");

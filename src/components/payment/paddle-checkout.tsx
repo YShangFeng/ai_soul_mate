@@ -49,7 +49,7 @@ export default function PaddleCheckoutButton({ tier, className, children, userId
     if (!priceId) return;
     setLoading(true);
     try {
-      const paddle = await getPaddle();
+      const paddle = await getPaddle(userId);
       if (paddle) {
         paddle.Checkout.open({
           items: [{ priceId, quantity: 1 }],
