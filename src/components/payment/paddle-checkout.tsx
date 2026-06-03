@@ -5,7 +5,7 @@ import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 
 let paddlePromise: Promise<Paddle | undefined> | null = null;
 
-function getPaddle() {
+function getPaddle(userId?: string) {
   if (!paddlePromise) {
     paddlePromise = initializePaddle({
       token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
@@ -13,8 +13,14 @@ function getPaddle() {
       checkout: {
         settings: { displayMode: "overlay", theme: "dark" },
       },
-      eventCallback: (event) => {
-        if (event.name === "checkout.completed") {
+      eventCallback: async (event) => {
+        if (event.name === "checkout.completed" && userId) {
+          const txId = event.data?.transaction_id ?? "";
+          await fetch("/api/paddle/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId, transactionId: txId }),
+          });
           window.location.href = "/profile?checkout=success";
         }
       },
