@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Paddle Webhook — handles transaction.completed for one-time purchases.
@@ -15,13 +15,17 @@ export async function POST(req: NextRequest) {
     const signature = req.headers.get("paddle-signature") ?? "";
 
     if (WEBHOOK_SECRET && signature) {
+      const parts = signature.split(";");
+      const ts = parts.find((p) => p.startsWith("ts="))?.slice(3) ?? "";
+      const actualSig = parts.find((p) => p.startsWith("h1="))?.slice(3);
+
       const crypto = await import("crypto");
       const hmac = crypto.createHmac("sha256", WEBHOOK_SECRET);
-      hmac.update(body);
+      hmac.update(`${ts}:${body}`);
       const expected = hmac.digest("hex");
-      const parts = signature.split(";");
-      const actualSig = parts.find((p) => p.startsWith("h1="))?.slice(3);
+
       if (!actualSig || expected !== actualSig) {
+        console.error("[Paddle Webhook] Invalid signature");
         return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
       }
     }
@@ -41,7 +45,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No user_id" }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     await supabase.from("subscriptions").upsert(
       {
