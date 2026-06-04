@@ -46,7 +46,7 @@ export default function SettingsPage() {
   async function handleCancelSubscription() {
     const paddleSubId = subscription?.stripeSubscriptionId;
     if (!paddleSubId) {
-      toast({ title: "No subscription found", description: "Please contact support.", variant: "destructive" });
+      toast({ title: "Subscription ID not available yet", description: "It may take a moment. Please refresh the page and try again.", variant: "destructive" });
       return;
     }
     setIsCanceling(true);

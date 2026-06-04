@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
       await supabase.from("subscriptions").update({
         plan,
         status: "active",
+        stripe_subscription_id: subscriptionId,
         updated_at: new Date().toISOString(),
       } as never).eq("user_id", userId);
     } else {
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         plan,
         status: "active",
+        stripe_subscription_id: subscriptionId,
         updated_at: new Date().toISOString(),
       } as never);
     }
