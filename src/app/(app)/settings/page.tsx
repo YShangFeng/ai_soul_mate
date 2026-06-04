@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Mail, LogOut, ArrowLeft, Key } from "lucide-react";
+import { Loader2, Mail, LogOut, ArrowLeft, Key, Ban } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
@@ -23,6 +23,8 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isCanceling, setIsCanceling] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   if (isAuthLoading || !user) {
     return (
@@ -39,7 +41,30 @@ export default function SettingsPage() {
     router.replace("/");
   }
 
-  async function handleChangePassword() {
+  async function handleCancelSubscription() {
+    if (!user) return;
+    setIsCanceling(true);
+    try {
+      const res = await fetch("/api/paddle/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to cancel");
+      toast({ title: "Subscription canceled", description: "Your plan has been downgraded to Free." });
+      window.location.reload();
+    } catch (err) {
+      toast({
+        title: "Cancel failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCanceling(false);
+      setShowCancelConfirm(false);
+    }
+  }
     const email = user?.email;
     if (!email) return;
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -170,6 +195,58 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Cancel Subscription — only for paid users */}
+      {plan !== "free" && (
+        <Card className="border-border/40 border-red-200 dark:border-red-800/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg text-red-600 dark:text-red-400">
+              <Ban className="h-5 w-5" />
+              Cancel Subscription
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!showCancelConfirm ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Your {plan === "moon" ? "Moon" : "Starlight"} subscription will remain active until the end of the current billing period. After that, you will be downgraded to the Free plan.
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/30 dark:text-red-400 dark:hover:bg-red-950/20"
+                  onClick={() => setShowCancelConfirm(true)}
+                >
+                  Cancel My Subscription
+                </Button>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                  Are you sure? You will lose access to VIP features at the end of your billing period.
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setShowCancelConfirm(false)}
+                    disabled={isCanceling}
+                  >
+                    Keep Subscription
+                  </Button>
+                  <Button
+                    className="flex-1 gap-2 bg-red-600 hover:bg-red-700 text-white"
+                    onClick={handleCancelSubscription}
+                    disabled={isCanceling}
+                  >
+                    {isCanceling && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {isCanceling ? "Canceling..." : "Confirm Cancel"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Logout */}
       <Button

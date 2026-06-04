@@ -24,9 +24,9 @@ export default function RefundPolicyPage() {
             SoulMate.ai offers subscription-based plans. The Moon plan is billed monthly
             at $9.99/month, and the Starlight plan is billed annually at $69.99/year.
             <strong> Subscriptions automatically renew </strong> at the end of each billing
-            period unless canceled. You may cancel your subscription at any time from your
-            account settings, and your access will continue until the end of the current
-            billing period.
+            period unless canceled. You may cancel your subscription at any time via the
+            Cancel Subscription button in your Account Settings. Your access will continue
+            until the end of the current billing period.
           </p>
         </section>
 
@@ -53,10 +53,14 @@ export default function RefundPolicyPage() {
         <section>
           <h2 className="text-xl font-semibold">4. Subscription Cancellation</h2>
           <p>
-            You can cancel your subscription at any time from your account settings.
-            Upon cancellation, your subscription will remain active until the end of
-            the current billing period, after which it will not renew. No partial
-            refunds are provided for unused time within a billing period.
+            You can cancel your subscription at any time from your{" "}
+            <strong>Account Settings</strong> page. Click "Cancel Subscription"
+            and confirm — your cancellation will be processed through Paddle,
+            our payment provider. Upon cancellation, your subscription will
+            remain active until the end of the current billing period, after
+            which it will not renew and you will be downgraded to the Free
+            plan. No partial refunds are provided for unused time within a
+            billing period.
           </p>
         </section>
 
