@@ -13,12 +13,13 @@ import { toast } from "@/components/ui/toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Loader2, Mail, LogOut, ArrowLeft, Key, Ban } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { initializePaddle } from "@paddle/paddle-js";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { supabase } = useSupabase();
   const { user, isLoading: isAuthLoading, signOut } = useAuth();
-  const { plan, status, trialEndsAt } = useSubscription();
+  const { plan, subscription, status, trialEndsAt } = useSubscription();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -41,30 +42,40 @@ export default function SettingsPage() {
     router.replace("/");
   }
 
+  /** Open Paddle's native cancellation flow (client-side, no API key needed) */
   async function handleCancelSubscription() {
-    if (!user) return;
+    const paddleSubId = subscription?.stripeSubscriptionId;
+    if (!paddleSubId) {
+      toast({ title: "No subscription found", description: "Please contact support.", variant: "destructive" });
+      return;
+    }
     setIsCanceling(true);
     try {
-      const res = await fetch("/api/paddle/cancel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
+      const paddle = await initializePaddle({
+        token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
+        environment: (process.env.NEXT_PUBLIC_PADDLE_ENV as "sandbox" | "production") ?? "sandbox",
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to cancel");
-      toast({ title: "Subscription canceled", description: "Your plan has been downgraded to Free." });
-      window.location.reload();
+      if (!paddle) throw new Error("Failed to load Paddle");
+
+      const result = await paddle.Retain.initCancellationFlow({ subscriptionId: paddleSubId });
+
+      if (result.status === "chose_to_cancel") {
+        toast({ title: "Subscription canceled", description: "Your plan has been downgraded to Free." });
+        window.location.reload();
+      } else if (result.status === "retained") {
+        toast({ title: "Subscription kept", description: "Glad you're staying with us!" });
+      }
+      // "aborted" or "error" → user closed modal or error, do nothing
     } catch (err) {
-      toast({
-        title: "Cancel failed",
-        description: err instanceof Error ? err.message : "Please try again.",
-        variant: "destructive",
-      });
+      console.error("Paddle cancel error:", err);
+      toast({ title: "Something went wrong", description: "Please try again or contact support.", variant: "destructive" });
     } finally {
       setIsCanceling(false);
       setShowCancelConfirm(false);
     }
   }
+
+  async function handleChangePassword() {
     const email = user?.email;
     if (!email) return;
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -82,7 +93,6 @@ export default function SettingsPage() {
 
     setIsChangingPassword(true);
     try {
-      // Verify current password by signing in, then update
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password: currentPassword,
@@ -92,9 +102,7 @@ export default function SettingsPage() {
         return;
       }
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
       if (updateError) throw updateError;
 
       toast({ title: "Password updated!", description: "Your password has been changed." });
@@ -114,12 +122,11 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6 px-4 pb-24 pt-20">
-      {/* Back button */}
       <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0">
         <ArrowLeft className="h-5 w-5" />
       </Button>
 
-      {/* User Info */}
+      {/* Account */}
       <Card className="border-border/40 overflow-hidden">
         <CardHeader>
           <CardTitle className="text-lg">Account</CardTitle>
@@ -154,49 +161,24 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="current-password">Current Password</Label>
-            <Input
-              id="current-password"
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Enter current password"
-              disabled={isChangingPassword}
-            />
+            <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Enter current password" disabled={isChangingPassword} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="new-password">New Password</Label>
-            <Input
-              id="new-password"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="At least 6 characters"
-              disabled={isChangingPassword}
-            />
+            <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 6 characters" disabled={isChangingPassword} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm-password">Confirm New Password</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-enter new password"
-              disabled={isChangingPassword}
-            />
+            <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" disabled={isChangingPassword} />
           </div>
-          <Button
-            onClick={handleChangePassword}
-            disabled={isChangingPassword}
-            className="w-full gap-2"
-          >
+          <Button onClick={handleChangePassword} disabled={isChangingPassword} className="w-full gap-2">
             {isChangingPassword && <Loader2 className="h-4 w-4 animate-spin" />}
             {isChangingPassword ? "Updating..." : "Update Password"}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Cancel Subscription — only for paid users */}
+      {/* Cancel Subscription — Paddle native flow, no backend API */}
       {plan !== "free" && (
         <Card className="border-border/40 border-red-200 dark:border-red-800/30">
           <CardHeader>
@@ -209,37 +191,24 @@ export default function SettingsPage() {
             {!showCancelConfirm ? (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Your {plan === "moon" ? "Moon" : "Starlight"} subscription will remain active until the end of the current billing period. After that, you will be downgraded to the Free plan.
+                  Your {plan === "moon" ? "Moon" : "Starlight"} subscription will remain active until the end of the current billing period, then you'll be downgraded to Free.
                 </p>
-                <Button
-                  variant="outline"
-                  className="w-full border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/30 dark:text-red-400 dark:hover:bg-red-950/20"
-                  onClick={() => setShowCancelConfirm(true)}
-                >
+                <Button variant="outline" className="w-full border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/30 dark:text-red-400 dark:hover:bg-red-950/20" onClick={() => setShowCancelConfirm(true)}>
                   Cancel My Subscription
                 </Button>
               </>
             ) : (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-red-600 dark:text-red-400">
-                  Are you sure? You will lose access to VIP features at the end of your billing period.
+                  Paddle will open a cancellation flow. You can still change your mind there.
                 </p>
                 <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setShowCancelConfirm(false)}
-                    disabled={isCanceling}
-                  >
+                  <Button variant="outline" className="flex-1" onClick={() => setShowCancelConfirm(false)} disabled={isCanceling}>
                     Keep Subscription
                   </Button>
-                  <Button
-                    className="flex-1 gap-2 bg-red-600 hover:bg-red-700 text-white"
-                    onClick={handleCancelSubscription}
-                    disabled={isCanceling}
-                  >
+                  <Button className="flex-1 gap-2 bg-red-600 hover:bg-red-700 text-white" onClick={handleCancelSubscription} disabled={isCanceling}>
                     {isCanceling && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {isCanceling ? "Canceling..." : "Confirm Cancel"}
+                    {isCanceling ? "Opening Paddle..." : "Open Paddle Cancel Flow"}
                   </Button>
                 </div>
               </div>
@@ -249,11 +218,7 @@ export default function SettingsPage() {
       )}
 
       {/* Logout */}
-      <Button
-        variant="outline"
-        onClick={handleSignOut}
-        className="w-full gap-2 text-muted-foreground hover:text-foreground"
-      >
+      <Button variant="outline" onClick={handleSignOut} className="w-full gap-2 text-muted-foreground hover:text-foreground">
         <LogOut className="h-4 w-4" />
         Sign Out
       </Button>
