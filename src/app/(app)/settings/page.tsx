@@ -13,13 +13,12 @@ import { toast } from "@/components/ui/toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Loader2, Mail, LogOut, ArrowLeft, Key, Ban } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { initializePaddle } from "@paddle/paddle-js";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { supabase } = useSupabase();
   const { user, isLoading: isAuthLoading, signOut } = useAuth();
-  const { plan, subscription, status, trialEndsAt } = useSubscription();
+  const { plan, status, trialEndsAt } = useSubscription();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -42,49 +41,26 @@ export default function SettingsPage() {
     router.replace("/");
   }
 
-  /** Open Paddle's native cancellation flow (client-side, no API key needed) */
+  /** Cancel subscription via Paddle API (backend handles the Paddle call) */
   async function handleCancelSubscription() {
-    const paddleSubId = subscription?.stripeSubscriptionId;
-    if (!paddleSubId) {
-      toast({ title: "Subscription ID not available yet", description: "It may take a moment. Please refresh the page and try again.", variant: "destructive" });
-      return;
-    }
+    if (!user) return;
     setIsCanceling(true);
     try {
-      const paddle = await initializePaddle({
-        token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
-        environment: (process.env.NEXT_PUBLIC_PADDLE_ENV as "sandbox" | "production") ?? "sandbox",
+      const res = await fetch("/api/paddle/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
       });
-      if (!paddle) throw new Error("Failed to load Paddle");
-
-      // Try Retain cancellation flow first (requires Paddle Retain product)
-      try {
-        const result = await paddle.Retain.initCancellationFlow({ subscriptionId: paddleSubId });
-        if (result.status === "chose_to_cancel") {
-          toast({ title: "Subscription canceled", description: "Your plan has been downgraded to Free." });
-          window.location.reload();
-          return;
-        } else if (result.status === "retained") {
-          toast({ title: "Subscription kept", description: "Glad you're staying with us!" });
-          return;
-        }
-        // "aborted" → user closed modal
-      } catch (retainErr: unknown) {
-        // Retain not available - open Paddle subscription management page directly
-        console.log("Retain not available, opening Paddle subscription page");
-        const isSandbox = process.env.NEXT_PUBLIC_PADDLE_ENV === "sandbox";
-        const paddleUrl = isSandbox
-          ? `https://sandbox-paddle.com/subscriptions/${paddleSubId}`
-          : `https://paddle.com/subscriptions/${paddleSubId}`;
-        window.open(paddleUrl, "_blank");
-        toast({ title: "Paddle opened", description: "Manage your subscription there, then refresh this page." });
-        return;
-      }
-
-      toast({ title: "Something went wrong", description: "Please try again or contact support.", variant: "destructive" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to cancel");
+      toast({ title: "Subscription canceled", description: "Your plan has been downgraded to Free." });
+      window.location.reload();
     } catch (err) {
-      console.error("Paddle cancel error:", err);
-      toast({ title: "Something went wrong", description: "Please try again or contact support.", variant: "destructive" });
+      toast({
+        title: "Cancel failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsCanceling(false);
       setShowCancelConfirm(false);
