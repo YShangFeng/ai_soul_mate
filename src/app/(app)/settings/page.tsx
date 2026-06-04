@@ -70,14 +70,14 @@ export default function SettingsPage() {
         }
         // "aborted" → user closed modal
       } catch (retainErr: unknown) {
-        // Retain not available (common if Retain product not enabled), fallback to portal
-        console.log("Retain not available, using portal fallback");
+        // Retain not available (common if Retain product not enabled), fallback to email
+        console.log("Retain not available, using email fallback");
+        window.location.href = `mailto:support@soulmate.ai?subject=Cancel%20Sub%20${paddleSubId.slice(-8)}&body=Please%20cancel%20my%20subscription.%0ASubscription%20ID:%20${paddleSubId}`;
+        toast({ title: "Opening email", description: "Send the email to request cancellation." });
+        return;
       }
 
-      // Fallback: open Paddle Customer Portal in new tab
-      const portalUrl = `https://${process.env.NEXT_PUBLIC_PADDLE_ENV === "sandbox" ? "sandbox-" : ""}paddle.com/subscriptions/${paddleSubId}`;
-      window.open(portalUrl, "_blank");
-      toast({ title: "Paddle Portal opened", description: "Please manage your subscription there, then return and refresh this page." });
+      toast({ title: "Something went wrong", description: "Please try again or contact support.", variant: "destructive" });
     } catch (err) {
       console.error("Paddle cancel error:", err);
       toast({ title: "Something went wrong", description: "Please try again or contact support.", variant: "destructive" });
