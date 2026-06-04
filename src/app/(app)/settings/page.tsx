@@ -18,7 +18,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { supabase } = useSupabase();
   const { user, isLoading: isAuthLoading, signOut } = useAuth();
-  const { plan, status, trialEndsAt } = useSubscription();
+  const { plan, subscription, status, trialEndsAt } = useSubscription();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -132,7 +132,7 @@ export default function SettingsPage() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-medium truncate">{userName}</h2>
-              <SubscriptionBadge plan={plan} status={status} trialEndsAt={trialEndsAt} />
+              <SubscriptionBadge plan={plan} status={status} trialEndsAt={trialEndsAt} currentPeriodEnd={subscription?.currentPeriodEnd} />
             </div>
             <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
               <Mail className="h-3.5 w-3.5" />
@@ -170,8 +170,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Cancel Subscription — Paddle native flow, no backend API */}
-      {plan !== "free" && (
+      {/* Cancel Subscription — only for active paid users */}
+      {plan !== "free" && status !== "canceled" && (
         <Card className="border-border/40 border-red-200 dark:border-red-800/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg text-red-600 dark:text-red-400">
@@ -205,6 +205,23 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Already canceled — show status */}
+      {plan !== "free" && status === "canceled" && (
+        <Card className="border-border/40 border-amber-200 dark:border-amber-800/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg text-amber-600 dark:text-amber-400">
+              <Ban className="h-5 w-5" />
+              Subscription Canceled
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Your {plan === "moon" ? "Moon" : "Starlight"} plan remains active until the end of the billing period, then you'll automatically switch to Free.
+            </p>
           </CardContent>
         </Card>
       )}
