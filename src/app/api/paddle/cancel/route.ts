@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
 
     const paddleApiKey = process.env.PADDLE_API_KEY;
     if (!paddleApiKey) {
-      return NextResponse.json({ error: "PADDLE_API_KEY not configured" }, { status: 500 });
+      console.error("[Paddle Cancel] PADDLE_API_KEY env var not set");
+      return NextResponse.json({ error: "Server not configured for cancellation. Please contact support." }, { status: 503 });
     }
 
     const isSandbox = process.env.NEXT_PUBLIC_PADDLE_ENV === "sandbox";
