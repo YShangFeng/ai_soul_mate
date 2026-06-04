@@ -70,10 +70,14 @@ export default function SettingsPage() {
         }
         // "aborted" → user closed modal
       } catch (retainErr: unknown) {
-        // Retain not available (common if Retain product not enabled), fallback to email
-        console.log("Retain not available, using email fallback");
-        window.location.href = `mailto:support@soulmate.ai?subject=Cancel%20Sub%20${paddleSubId.slice(-8)}&body=Please%20cancel%20my%20subscription.%0ASubscription%20ID:%20${paddleSubId}`;
-        toast({ title: "Opening email", description: "Send the email to request cancellation." });
+        // Retain not available - open Paddle subscription management page directly
+        console.log("Retain not available, opening Paddle subscription page");
+        const isSandbox = process.env.NEXT_PUBLIC_PADDLE_ENV === "sandbox";
+        const paddleUrl = isSandbox
+          ? `https://sandbox-paddle.com/subscriptions/${paddleSubId}`
+          : `https://paddle.com/subscriptions/${paddleSubId}`;
+        window.open(paddleUrl, "_blank");
+        toast({ title: "Paddle opened", description: "Manage your subscription there, then refresh this page." });
         return;
       }
 
