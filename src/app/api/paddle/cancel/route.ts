@@ -42,14 +42,14 @@ export async function POST(request: NextRequest) {
       ? "https://sandbox-api.paddle.com"
       : "https://api.paddle.com";
 
-    // Cancel via Paddle REST API
+    // Cancel at end of billing period — no refund, user keeps access until expiry
     const paddleRes = await fetch(`${apiBase}/subscriptions/${paddleSubId}/cancel`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${paddleApiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ effective_from: "immediately" }),
+      body: JSON.stringify({ effective_from: "next_billing_period" }),
     });
 
     if (!paddleRes.ok) {
@@ -60,17 +60,17 @@ export async function POST(request: NextRequest) {
 
     console.log("[Paddle Cancel] Paddle subscription canceled:", paddleSubId);
 
-    // Downgrade to free in our DB
+    // Don't downgrade yet — user keeps access until period end.
+    // The subscription.canceled webhook will handle the downgrade later.
     await supabase
       .from("subscriptions")
       .update({
-        plan: "free",
         status: "canceled",
         updated_at: new Date().toISOString(),
       } as never)
       .eq("user_id", userId);
 
-    console.log("[Paddle Cancel] User", userId, "downgraded to free");
+    console.log("[Paddle Cancel] User", userId, "canceled at period end");
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[Paddle Cancel] Error:", err);

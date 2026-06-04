@@ -53,7 +53,7 @@ export default function SettingsPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to cancel");
-      toast({ title: "Subscription canceled", description: "Your plan has been downgraded to Free." });
+      toast({ title: "Subscription canceled", description: "You keep access until the end of this billing period." });
       window.location.reload();
     } catch (err) {
       toast({
