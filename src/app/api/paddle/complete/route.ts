@@ -16,6 +16,15 @@ export async function POST(request: NextRequest) {
     // Validate tier: moon or starlight (default to moon for safety)
     const plan = tier === "starlight" ? "starlight" : "moon";
 
+    // Calculate approximate period end (webhook will overwrite with exact value)
+    const now = new Date();
+    const periodEnd = new Date(now);
+    if (plan === "starlight") {
+      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    } else {
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+    }
+
     const supabase = createAdminClient();
 
     // Upsert subscription record
@@ -24,6 +33,7 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         plan,
         status: "active",
+        current_period_end: periodEnd.toISOString(),
         updated_at: new Date().toISOString(),
       } as never,
       { onConflict: "user_id" }

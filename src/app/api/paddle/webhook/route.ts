@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
     const starlightPriceId = process.env.NEXT_PUBLIC_PADDLE_STARLIGHT_PRICE_ID ?? "";
     const plan: "moon" | "starlight" =
       customTier === "starlight" || priceId === starlightPriceId ? "starlight" : "moon";
+    const periodEnd = event.data?.current_billing_period?.ends_at ?? null;
 
     console.log("[Paddle Webhook]", eventType, "userId:", userId, "plan:", plan);
 
@@ -68,21 +69,18 @@ export async function POST(req: NextRequest) {
       .eq("user_id", userId)
       .maybeSingle();
 
+    const row: Record<string, unknown> = {
+      plan,
+      status: "active",
+      stripe_subscription_id: subscriptionId,
+      updated_at: new Date().toISOString(),
+    };
+    if (periodEnd) row.current_period_end = periodEnd;
+
     if (existing) {
-      await supabase.from("subscriptions").update({
-        plan,
-        status: "active",
-        stripe_subscription_id: subscriptionId,
-        updated_at: new Date().toISOString(),
-      } as never).eq("user_id", userId);
+      await supabase.from("subscriptions").update(row as never).eq("user_id", userId);
     } else {
-      await supabase.from("subscriptions").insert({
-        user_id: userId,
-        plan,
-        status: "active",
-        stripe_subscription_id: subscriptionId,
-        updated_at: new Date().toISOString(),
-      } as never);
+      await supabase.from("subscriptions").insert({ user_id: userId, ...row } as never);
     }
 
     console.log(`[Paddle Webhook] Activated ${plan} for user ${userId}`);
