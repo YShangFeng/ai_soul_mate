@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
 
     if (!paddleRes.ok) {
       const errBody = await paddleRes.text();
-      console.error("[Paddle Cancel] API error:", paddleRes.status, errBody);
-      return NextResponse.json({ error: "Paddle cancellation failed" }, { status: 502 });
+      console.error("[Paddle Cancel] API error:", { status: paddleRes.status, env: process.env.NEXT_PUBLIC_PADDLE_ENV, response: errBody.slice(0, 300) });
+      return NextResponse.json({ error: `Paddle API error (${paddleRes.status}) — check PADDLE_API_KEY matches NEXT_PUBLIC_PADDLE_ENV` }, { status: 502 });
     }
 
     console.log("[Paddle Cancel] Paddle subscription canceled:", paddleSubId);
