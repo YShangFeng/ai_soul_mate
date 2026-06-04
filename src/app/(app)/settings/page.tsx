@@ -57,15 +57,27 @@ export default function SettingsPage() {
       });
       if (!paddle) throw new Error("Failed to load Paddle");
 
-      const result = await paddle.Retain.initCancellationFlow({ subscriptionId: paddleSubId });
-
-      if (result.status === "chose_to_cancel") {
-        toast({ title: "Subscription canceled", description: "Your plan has been downgraded to Free." });
-        window.location.reload();
-      } else if (result.status === "retained") {
-        toast({ title: "Subscription kept", description: "Glad you're staying with us!" });
+      // Try Retain cancellation flow first (requires Paddle Retain product)
+      try {
+        const result = await paddle.Retain.initCancellationFlow({ subscriptionId: paddleSubId });
+        if (result.status === "chose_to_cancel") {
+          toast({ title: "Subscription canceled", description: "Your plan has been downgraded to Free." });
+          window.location.reload();
+          return;
+        } else if (result.status === "retained") {
+          toast({ title: "Subscription kept", description: "Glad you're staying with us!" });
+          return;
+        }
+        // "aborted" → user closed modal
+      } catch (retainErr: unknown) {
+        // Retain not available (common if Retain product not enabled), fallback to portal
+        console.log("Retain not available, using portal fallback");
       }
-      // "aborted" or "error" → user closed modal or error, do nothing
+
+      // Fallback: open Paddle Customer Portal in new tab
+      const portalUrl = `https://${process.env.NEXT_PUBLIC_PADDLE_ENV === "sandbox" ? "sandbox-" : ""}paddle.com/subscriptions/${paddleSubId}`;
+      window.open(portalUrl, "_blank");
+      toast({ title: "Paddle Portal opened", description: "Please manage your subscription there, then return and refresh this page." });
     } catch (err) {
       console.error("Paddle cancel error:", err);
       toast({ title: "Something went wrong", description: "Please try again or contact support.", variant: "destructive" });
@@ -200,7 +212,7 @@ export default function SettingsPage() {
             ) : (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-red-600 dark:text-red-400">
-                  Paddle will open a cancellation flow. You can still change your mind there.
+                  This will open Paddle's cancellation flow — you can still change your mind there.
                 </p>
                 <div className="flex gap-3">
                   <Button variant="outline" className="flex-1" onClick={() => setShowCancelConfirm(false)} disabled={isCanceling}>
@@ -208,7 +220,7 @@ export default function SettingsPage() {
                   </Button>
                   <Button className="flex-1 gap-2 bg-red-600 hover:bg-red-700 text-white" onClick={handleCancelSubscription} disabled={isCanceling}>
                     {isCanceling && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {isCanceling ? "Opening Paddle..." : "Open Paddle Cancel Flow"}
+                    {isCanceling ? "Opening Paddle..." : "Continue to Cancel"}
                   </Button>
                 </div>
               </div>
